@@ -1,4 +1,4 @@
-const DEFAULT_SPREADSHEET_ID = '1q0cymT8Wn3BD1BPYG1CRK_X-RSMBMu2dtqvVcN2pq1U';
+const DEFAULT_SPREADSHEET_ID = 'XXX';
 
 function getSpreadsheet() {
   const props = PropertiesService.getScriptProperties();
