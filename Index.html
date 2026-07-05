@@ -1,0 +1,3331 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POCT QualiAgentics - ระบบควบคุมคุณภาพเครื่องตรวจ POCT</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts: Sarabun, Prompt & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <!-- Chart.js for Levey-Jennings Chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- High-Fidelity PDF & Image Export Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Sarabun', 'Prompt', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            pastel: {
+              pink: '#FDE2E4',
+              rose: '#FFCAD4',
+              lavender: '#E2E2FF',
+              sky: '#D8F3DC',
+              teal: '#B7E4C7',
+              blue: '#D0F4DE',
+              purple: '#E0AAFF',
+              glassBg: 'rgba(255, 255, 255, 0.45)',
+              glassBorder: 'rgba(255, 255, 255, 0.65)',
+            }
+          },
+          boxShadow: {
+            'liquid': '0 8px 32px 0 rgba(31, 38, 135, 0.12)',
+            'liquid-lg': '0 16px 48px 0 rgba(147, 51, 234, 0.22)',
+            'glow-pink': '0 0 20px 2px rgba(244, 114, 182, 0.3)',
+            'glow-purple': '0 0 20px 2px rgba(192, 132, 252, 0.3)',
+            'glow-teal': '0 0 20px 2px rgba(45, 212, 191, 0.3)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 25%, #fae8ff 50%, #e0f2fe 75%, #f0fdf4 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+      font-family: 'Sarabun', 'Prompt', 'Inter', sans-serif;
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Dynamic Spectrum Animation for System Name */
+    @keyframes spectrumGradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .animate-spectrum-text {
+      background: linear-gradient(90deg, #9333ea, #ec4899, #2563eb, #059669, #d97706, #ec4899, #9333ea);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: spectrumGradient 10s ease infinite;
+    }
+
+    /* CRITICAL FIX: SweetAlert2 z-index & transparent checkmark fix */
+    .swal2-container {
+      z-index: 999999 !important;
+    }
+    .swal2-popup {
+      font-family: 'Sarabun', 'Prompt', sans-serif !important;
+      border-radius: 1.5rem !important;
+      background: rgba(255, 255, 255, 0.98) !important;
+      backdrop-filter: blur(16px) !important;
+      border: 1.5px solid rgba(255, 255, 255, 0.9) !important;
+      box-shadow: 0 20px 50px 0 rgba(168, 85, 247, 0.25) !important;
+    }
+    
+    .swal2-icon.swal2-success [class^='swal2-success-circular-line'] {
+      background-color: transparent !important;
+    }
+    .swal2-icon.swal2-success .swal2-success-fix {
+      background-color: transparent !important;
+    }
+
+    /* Liquid Glassmorphism Utilities */
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1.5px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 10px 32px 0 rgba(168, 85, 247, 0.1);
+      border-radius: 1.25rem;
+    }
+
+    .glass-modal-panel {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(253, 244, 255, 0.92));
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1.5px solid rgba(255, 255, 255, 0.95);
+      box-shadow: 0 24px 60px 0 rgba(168, 85, 247, 0.25);
+      border-radius: 1.75rem;
+    }
+
+    .glass-panel-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-panel-hover:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.88);
+      border-color: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 16px 36px 0 rgba(168, 85, 247, 0.18);
+    }
+
+    .glass-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.55));
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.95);
+    }
+
+    .glass-input {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1.5px solid rgba(203, 213, 225, 0.8);
+      transition: all 0.2s ease-in-out;
+      font-family: 'Sarabun', sans-serif;
+    }
+    .glass-input:focus {
+      background: rgba(255, 255, 255, 0.98);
+      border-color: #a855f7;
+      box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.15);
+      outline: none;
+    }
+
+    .glass-btn-primary {
+      background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      box-shadow: 0 4px 15px rgba(168, 85, 247, 0.35);
+      transition: all 0.25s ease;
+      font-family: 'Prompt', 'Sarabun', sans-serif;
+    }
+    .glass-btn-primary:hover {
+      background: linear-gradient(135deg, #9333ea 0%, #db2777 100%);
+      box-shadow: 0 8px 22px rgba(168, 85, 247, 0.5);
+      transform: translateY(-1px);
+    }
+
+    /* Dot Grid Loading Animation */
+    .dot-grid-spinner {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      width: 60px;
+      height: 60px;
+      margin: 0 auto;
+    }
+    .dot-grid-spinner div {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #a855f7, #ec4899);
+      animation: dotGridPulse 1.2s infinite ease-in-out;
+    }
+    .dot-grid-spinner div:nth-child(1) { animation-delay: 0s; }
+    .dot-grid-spinner div:nth-child(2) { animation-delay: 0.2s; }
+    .dot-grid-spinner div:nth-child(3) { animation-delay: 0.4s; }
+    .dot-grid-spinner div:nth-child(4) { animation-delay: 0.2s; }
+    .dot-grid-spinner div:nth-child(5) { animation-delay: 0.4s; }
+    .dot-grid-spinner div:nth-child(6) { animation-delay: 0.6s; }
+    .dot-grid-spinner div:nth-child(7) { animation-delay: 0.4s; }
+    .dot-grid-spinner div:nth-child(8) { animation-delay: 0.6s; }
+    .dot-grid-spinner div:nth-child(9) { animation-delay: 0.8s; }
+
+    @keyframes dotGridPulse {
+      0%, 100% { transform: scale(0.3); opacity: 0.3; }
+      50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 6px rgba(168,85,247,0.8)); }
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.3); }
+    ::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.4); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(168, 85, 247, 0.7); }
+  </style>
+</head>
+
+<body class="p-2 sm:p-4 md:p-6 pb-20 w-full overflow-x-hidden">
+
+  <!-- Fullscreen Loading Overlay -->
+  <div id="loadingOverlay" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-purple-900/20 backdrop-blur-md transition-opacity duration-300">
+    <div class="glass-modal-panel p-8 rounded-3xl text-center shadow-liquid-lg max-w-sm w-full mx-4 border border-white/90">
+      <div class="dot-grid-spinner mb-6">
+        <div></div><div></div><div></div>
+        <div></div><div></div><div></div>
+        <div></div><div></div><div></div>
+      </div>
+      <h3 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-700 to-pink-600 mb-1 font-['Prompt']">POCT QualiAgentics</h3>
+      <p class="text-xs text-slate-700 font-medium">กำลังโหลดข้อมูลระบบ...</p>
+      
+      <div class="w-full bg-slate-200/80 h-2.5 rounded-full mt-5 overflow-hidden shadow-inner border border-white/50">
+        <div id="loadingProgressBar" class="bg-gradient-to-r from-purple-600 via-pink-500 to-rose-400 h-full w-0 transition-all duration-300 ease-out shadow-sm"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full Width Application Container -->
+  <div class="w-full px-1 sm:px-2 md:px-4">
+    
+    <!-- Top App Bar / Header -->
+    <header class="glass-panel p-4 md:p-6 mb-6 relative overflow-hidden">
+      <div class="absolute -top-12 -right-12 w-64 h-64 bg-gradient-to-br from-purple-400/25 to-pink-400/25 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-12 -left-12 w-64 h-64 bg-gradient-to-tr from-sky-400/25 to-teal-400/25 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+        <div class="flex items-center gap-4">
+          <!-- Dynamic POCT QA Logo Icon -->
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600 via-pink-500 to-rose-400 flex items-center justify-center text-white text-2xl shadow-glow-purple shadow-lg">
+            <i class="fa-solid fa-vial-circle-check"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2.5">
+              <h1 class="text-2xl md:text-3xl font-bold animate-spectrum-text font-['Prompt']">
+                POCT QualiAgentics
+              </h1>
+              <span class="px-3 py-0.5 rounded-full text-xs font-semibold bg-purple-100/90 text-purple-800 border border-purple-300/80 shadow-sm font-mono">
+                0.0.8 AI Core
+              </span>
+            </div>
+            <p class="text-xs md:text-sm text-slate-700 font-normal mt-0.5">
+              ระบบบันทึก วิเคราะห์ และประเมินผลการควบคุมคุณภาพเครื่องตรวจ POCT อัจฉริยะ
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button onclick="fetchData()" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/90 hover:bg-white text-slate-800 border border-white shadow-sm hover:shadow transition-all flex items-center gap-1.5 font-['Prompt']">
+            <i class="fa-solid fa-rotate text-purple-600"></i>
+            <span>รีเฟรช</span>
+          </button>
+          
+          <button onclick="requestDevModeAccess()" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border border-purple-300 shadow-sm hover:shadow transition-all flex items-center gap-1.5 font-['Prompt']">
+            <i class="fa-solid fa-lock text-yellow-300"></i>
+            <span>ตั้งค่าระบบ (Dev Mode)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center gap-2 mt-5 overflow-x-auto pb-1 pt-2 border-t border-white/70">
+        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-tab px-4 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-2 transition-all bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md font-['Prompt']">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Dashboard</span>
+        </button>
+
+        <button onclick="switchTab('devices')" id="tab-devices" class="nav-tab px-4 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 hover:bg-white/60 transition-all font-['Prompt']">
+          <i class="fa-solid fa-laptop-medical"></i>
+          <span>ทะเบียนเครื่อง POCT</span>
+        </button>
+
+        <button onclick="switchTab('reagents')" id="tab-reagents" class="nav-tab px-4 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 hover:bg-white/60 transition-all font-['Prompt']">
+          <i class="fa-solid fa-vial"></i>
+          <span>ทะเบียนน้ำยา</span>
+        </button>
+
+        <button onclick="switchTab('iqc-controls')" id="tab-iqc-controls" class="nav-tab px-4 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 hover:bg-white/60 transition-all font-['Prompt']">
+          <i class="fa-solid fa-filter-circle-dollar"></i>
+          <span>ทะเบียน IQC</span>
+        </button>
+
+        <button onclick="switchTab('iqc-testing')" id="tab-iqc-testing" class="nav-tab px-4 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 hover:bg-white/60 transition-all font-['Prompt']">
+          <i class="fa-solid fa-square-poll-vertical"></i>
+          <span>ผล IQC</span>
+        </button>
+
+        <button onclick="switchTab('eqa')" id="tab-eqa" class="nav-tab px-4 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-500 opacity-80 hover:bg-white/40 transition-all relative font-['Prompt']">
+          <i class="fa-solid fa-award"></i>
+          <span>ผล EQA</span>
+          <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">กำลังพัฒนา</span>
+        </button>
+      </nav>
+    </header>
+
+
+    <!-- TAB 1: DASHBOARD -->
+    <main id="content-dashboard" class="tab-content space-y-6 w-full">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+        <div class="glass-panel p-5 relative overflow-hidden glass-panel-hover border-purple-200/60">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-xs font-semibold text-purple-800 uppercase tracking-wider font-['Prompt']">เครื่องตรวจ POCT ทั้งหมด</p>
+              <h3 id="dash-total-devices" class="text-3xl font-bold text-slate-900 mt-1.5 font-['Prompt']">0</h3>
+              <p class="text-xs text-slate-600 mt-1">ทะเบียนเครื่องตรวจวิเคราะห์</p>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center text-xl shadow-inner">
+              <i class="fa-solid fa-laptop-medical"></i>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-white/70 space-y-1.5">
+            <div class="flex justify-between text-xs font-medium text-slate-700">
+              <span>พร้อมใช้งาน</span>
+              <span id="dash-ready-count" class="font-bold text-emerald-700">0 เครื่อง</span>
+            </div>
+            <div class="w-full bg-slate-200/70 h-2.5 rounded-full overflow-hidden flex">
+              <div id="dash-ready-bar" class="bg-emerald-500 h-full transition-all duration-500" style="width: 0%"></div>
+              <div id="dash-repair-bar" class="bg-amber-500 h-full transition-all duration-500" style="width: 0%"></div>
+              <div id="dash-retired-bar" class="bg-rose-500 h-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: รายการน้ำยา -->
+        <div class="glass-panel p-5 relative overflow-hidden glass-panel-hover border-pink-200/60">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-xs font-semibold text-pink-800 uppercase tracking-wider font-['Prompt']">รายการน้ำยา</p>
+              <h3 id="dash-total-reagents" class="text-3xl font-bold text-slate-900 mt-1.5 font-['Prompt']">0</h3>
+              <p class="text-xs text-slate-600 mt-1">Lot ที่เปิดใช้งานในระบบ</p>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-pink-100 text-pink-600 flex items-center justify-center text-xl shadow-inner">
+              <i class="fa-solid fa-flask"></i>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-white/70 flex items-center justify-between text-xs">
+            <span class="text-slate-700">สถานะวันหมดอายุ:</span>
+            <span id="dash-reagent-status" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">ปกติทุก Lot</span>
+          </div>
+        </div>
+
+        <!-- Card 3: สารควบคุม IQC -->
+        <div class="glass-panel p-5 relative overflow-hidden glass-panel-hover border-sky-200/60">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-xs font-semibold text-sky-800 uppercase tracking-wider font-['Prompt']">สารควบคุม IQC</p>
+              <h3 id="dash-total-controls" class="text-3xl font-bold text-slate-900 mt-1.5 font-['Prompt']">0</h3>
+              <p class="text-xs text-slate-600 mt-1">ระดับคุณภาพ (Levels 1-3)</p>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center text-xl shadow-inner">
+              <i class="fa-solid fa-vials"></i>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-white/70 flex items-center justify-between text-xs">
+            <span class="text-slate-700">มาตรฐานเกณฑ์:</span>
+            <span class="font-semibold text-sky-800">Westgard Engine</span>
+          </div>
+        </div>
+
+        <div class="glass-panel p-5 relative overflow-hidden glass-panel-hover border-teal-200/60">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-xs font-semibold text-teal-800 uppercase tracking-wider font-['Prompt']">อัตราผ่านเกณฑ์ IQC</p>
+              <h3 id="dash-iqc-pass-rate" class="text-3xl font-bold text-slate-900 mt-1.5 font-['Prompt']">100%</h3>
+              <p class="text-xs text-slate-600 mt-1">ตามกฎ Westgard Multi-rules</p>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-teal-100 text-teal-600 flex items-center justify-center text-xl shadow-inner">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-white/70 flex items-center justify-between text-xs">
+            <span class="text-slate-700">In Control / Out:</span>
+            <span id="dash-iqc-ratio" class="font-bold text-emerald-700">0 / 0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+        <div class="lg:col-span-2 glass-panel p-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <h3 class="text-base md:text-lg font-bold text-slate-900 flex items-center gap-2 font-['Prompt']">
+              <i class="fa-solid fa-history text-purple-600"></i>
+              <span>ประวัติการทดสอบ IQC ล่าสุด</span>
+            </h3>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <!-- Split Month & Year Filters for Dashboard -->
+              <div class="flex items-center gap-1.5">
+                <select id="dash-month-select" onchange="renderDashboard()" class="glass-input px-3 py-1.5 rounded-xl text-xs font-semibold text-purple-950">
+                </select>
+                <select id="dash-year-select" onchange="renderDashboard()" class="glass-input px-3 py-1.5 rounded-xl text-xs font-semibold text-purple-950">
+                </select>
+              </div>
+
+              <button onclick="openMonthlyReportModal()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white border border-emerald-300 shadow-sm flex items-center gap-1.5 font-['Prompt'] whitespace-nowrap">
+                <i class="fa-solid fa-file-pdf"></i>
+                <span>รายงานสรุปประจำเดือน</span>
+              </button>
+
+              <button onclick="openIQCModal()" class="glass-btn-primary px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap">
+                <i class="fa-solid fa-plus"></i>
+                <span>รายงานผล IQC</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs sm:text-sm">
+              <thead class="bg-white/60 text-slate-700 border-b border-white font-semibold font-['Prompt']">
+                <tr>
+                  <th class="p-3">วันที่ตรวจ</th>
+                  <th class="p-3">รหัสเครื่อง</th>
+                  <th class="p-3">Lot Control</th>
+                  <th class="p-3">ผู้ทดสอบ</th>
+                  <th class="p-3">ผลประเมิน</th>
+                  <th class="p-3">กฎที่ละเมิด</th>
+                </tr>
+              </thead>
+              <tbody id="dash-recent-iqc-table" class="divide-y divide-white/50">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="glass-panel p-5 flex flex-col justify-between">
+          <div>
+            <h3 class="text-base md:text-lg font-bold text-slate-900 mb-4 flex items-center gap-2 font-['Prompt']">
+              <i class="fa-solid fa-chart-donut text-pink-600"></i>
+              <span>สถานะเครื่องตรวจแยกตามแผนก</span>
+            </h3>
+            <div id="dash-dept-list" class="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+            </div>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-white/70">
+            <div class="p-3.5 rounded-xl bg-purple-50/80 border border-purple-200/80 flex items-center gap-3">
+              <i class="fa-solid fa-wand-magic-sparkles text-purple-600 text-xl"></i>
+              <div>
+                <h4 class="text-xs font-bold text-purple-900 font-['Prompt']">Westgard Multi-Rule Engine Active</h4>
+                <p class="text-xs text-purple-700">ตรวจสอบอัตโนมัติ: 1-2s, 2-2s, 1-3s, R-4s, 4-1s, 10x</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+
+    <!-- TAB 2: DEVICE REGISTRY -->
+    <main id="content-devices" class="tab-content hidden space-y-6 w-full">
+      <div class="glass-panel p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2 font-['Prompt']">
+              <i class="fa-solid fa-laptop-medical text-purple-600"></i>
+              <span>ทะเบียนเครื่อง POCT</span>
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-600">จัดการข้อมูลเครื่องตรวจ รหัสเครื่อง แผนกที่ใช้งาน และกำหนดสถานะการทำงาน</p>
+          </div>
+          
+          <button onclick="openAddDeviceModal()" class="glass-btn-primary px-4 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-2 shadow-lg">
+            <i class="fa-solid fa-plus-circle"></i>
+            <span>+ ลงทะเบียนเครื่องตรวจใหม่</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-4">
+          <input type="text" id="device-search" oninput="filterDevices()" placeholder="🔍 ค้นหาชื่อเครื่อง / S/N / ID..." class="glass-input px-3.5 py-2 rounded-xl text-xs sm:text-sm w-full">
+          <select id="device-test-filter" onchange="filterDevices()" class="glass-input px-3.5 py-2 rounded-xl text-xs sm:text-sm w-full">
+            <option value="">ทุกรายการตรวจ (Test)</option>
+          </select>
+          <select id="device-dept-filter" onchange="filterDevices()" class="glass-input px-3.5 py-2 rounded-xl text-xs sm:text-sm w-full">
+            <option value="">ทุกแผนกที่ใช้งาน</option>
+          </select>
+          <select id="device-status-filter" onchange="filterDevices()" class="glass-input px-3.5 py-2 rounded-xl text-xs sm:text-sm w-full">
+            <option value="">ทุกสถานะเครื่อง</option>
+            <option value="พร้อมใช้">พร้อมใช้</option>
+            <option value="ระระหว่างซ่อม">ระหว่างซ่อม</option>
+            <option value="เลิกใช้">เลิกใช้</option>
+          </select>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-white/80">
+          <table class="w-full text-left text-xs sm:text-sm">
+            <thead class="bg-purple-100/60 text-purple-950 border-b border-white font-semibold font-['Prompt']">
+              <tr>
+                <th class="p-3.5">รหัสเครื่อง (Device ID)</th>
+                <th class="p-3.5">ชื่อเครื่องตรวจ</th>
+                <th class="p-3.5">รายการตรวจ (Test)</th>
+                <th class="p-3.5">ยี่ห้อ/รุ่น (Model)</th>
+                <th class="p-3.5">Serial Number (S/N)</th>
+                <th class="p-3.5">แผนกที่ใช้งาน</th>
+                <th class="p-3.5">ผู้รับผิดชอบ (Contact)</th>
+                <th class="p-3.5">วันที่เริ่มใช้</th>
+                <th class="p-3.5 text-center">ตั้งค่าสถานะ</th>
+                <th class="p-3.5 text-center">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="devices-table-body" class="divide-y divide-white/60">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+
+    <!-- TAB 3: REAGENT REGISTRY -->
+    <main id="content-reagents" class="tab-content hidden space-y-6 w-full">
+      <div class="glass-panel p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2 font-['Prompt']">
+              <i class="fa-solid fa-vial text-pink-600"></i>
+              <span>ทะเบียนน้ำยา</span>
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-600">บันทึกและติดตามรายการน้ำยา Lot Number และวันหมดอายุ</p>
+          </div>
+          
+          <button onclick="openAddReagentModal()" class="glass-btn-primary px-4 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-2 shadow-lg">
+            <i class="fa-solid fa-plus-circle"></i>
+            <span>+ ลงทะเบียนน้ำยาใหม่</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+          <input type="text" id="reagent-search" oninput="filterReagents()" placeholder="🔍 ค้นหาชื่อน้ำยา / Lot..." class="glass-input px-3.5 py-2 rounded-xl text-xs sm:text-sm w-full">
+          <select id="reagent-test-filter" onchange="filterReagents()" class="glass-input px-3.5 py-2 rounded-xl text-xs sm:text-sm w-full">
+            <option value="">ทุกรายการตรวจ (Test)</option>
+          </select>
+          <select id="reagent-exp-filter" onchange="filterReagents()" class="glass-input px-3.5 py-2 rounded-xl text-xs sm:text-sm w-full">
+            <option value="">ทุกสถานะวันหมดอายุ</option>
+            <option value="normal">ปกติ</option>
+            <option value="expiring">ใกล้หมดอายุ (ภายใน 30 วัน)</option>
+            <option value="expired">หมดอายุแล้ว</option>
+          </select>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-white/80">
+          <table class="w-full text-left text-xs sm:text-sm">
+            <thead class="bg-pink-100/60 text-pink-950 border-b border-white font-semibold font-['Prompt']">
+              <tr>
+                <th class="p-3.5">รหัสรายการ</th>
+                <th class="p-3.5">รายการตรวจ (Test Item)</th>
+                <th class="p-3.5">ชื่อน้ำยาตรวจ</th>
+                <th class="p-3.5">Lot Number</th>
+                <th class="p-3.5">วันที่หมดอายุ (Expiry Date)</th>
+                <th class="p-3.5">สถานะวันหมดอายุ</th>
+                <th class="p-3.5 text-center">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="reagents-table-body" class="divide-y divide-white/60">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+
+    <!-- TAB 4: IQC CONTROL REGISTRY -->
+    <main id="content-iqc-controls" class="tab-content hidden space-y-6 w-full">
+      <div class="glass-panel p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2 font-['Prompt']">
+              <i class="fa-solid fa-filter-circle-dollar text-sky-600"></i>
+              <span>ทะเบียน IQC</span>
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-600">กำหนดเกณฑ์การควบคุมคุณภาพ (Mean & SD) สำหรับแต่ละ Level</p>
+          </div>
+          
+          <button onclick="openAddIQCControlModal()" class="glass-btn-primary px-4 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-2 shadow-lg">
+            <i class="fa-solid fa-plus-circle"></i>
+            <span>+ เพิ่มสารควบคุมคุณภาพ IQC</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+          <input type="text" id="control-search" oninput="filterControls()" placeholder="🔍 ค้นหาชื่อสารควบคุม / Lot..." class="glass-input px-3.5 py-2 rounded-xl text-xs sm:text-sm w-full">
+          <select id="control-test-filter" onchange="filterControls()" class="glass-input px-3.5 py-2 rounded-xl text-xs sm:text-sm w-full">
+            <option value="">ทุกรายการตรวจ (Test)</option>
+          </select>
+          <select id="control-exp-filter" onchange="filterControls()" class="glass-input px-3.5 py-2 rounded-xl text-xs sm:text-sm w-full">
+            <option value="">ทุกสถานะวันหมดอายุ</option>
+            <option value="normal">ปกติ</option>
+            <option value="expiring">ใกล้หมดอายุ (ภายใน 30 วัน)</option>
+            <option value="expired">หมดอายุแล้ว</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="controls-cards-container">
+        </div>
+      </div>
+    </main>
+
+
+    <!-- TAB 5: IQC TESTING & HIGH-PERFORMANCE LEVEY-JENNINGS CHART -->
+    <main id="content-iqc-testing" class="tab-content hidden space-y-6 w-full">
+      <div class="glass-panel p-5">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2 font-['Prompt']">
+              <i class="fa-solid fa-square-poll-vertical text-purple-600"></i>
+              <span>ผล IQC & Levey-Jennings Chart (Westgard Engine)</span>
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-600">รายงานผล IQC วิเคราะห์ตามกฎ Westgard Multi-rules และแสดงกราฟ Levey-Jennings (L-J Chart)</p>
+          </div>
+
+          <button onclick="openIQCModal()" class="glass-btn-primary px-5 py-2.5 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-liquid">
+            <i class="fa-solid fa-plus"></i>
+            <span>รายงานผล IQC</span>
+          </button>
+        </div>
+
+        <!-- Multi-Filter Control Panel for L-J Chart -->
+        <div class="glass-card p-4 rounded-2xl mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 border-purple-200/70">
+          <div>
+            <label class="block text-xs font-semibold text-slate-800 mb-1 font-['Prompt']">เลือกรายการตรวจ (Test):</label>
+            <select id="lj-test-select" onchange="onLJTestChange()" class="glass-input px-3 py-1.5 rounded-xl text-xs sm:text-sm w-full font-medium">
+              <option value="">ทุกรายการตรวจ (Test)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-800 mb-1 font-['Prompt']">เลือกเครื่องตรวจวิเคราะห์:</label>
+            <select id="lj-device-select" onchange="onLJDeviceChange()" class="glass-input px-3 py-1.5 rounded-xl text-xs sm:text-sm w-full font-medium">
+              <option value="ALL">-- ทุกเครื่องตรวจ (All Devices) --</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-800 mb-1 font-['Prompt']">เลือกสารควบคุม (Control Lot):</label>
+            <select id="lj-control-select" onchange="renderLJChart()" class="glass-input px-3 py-1.5 rounded-xl text-xs sm:text-sm w-full font-medium">
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-800 mb-1 font-['Prompt']">เลือกระดับ Level กราฟ:</label>
+            <select id="lj-level-select" onchange="renderLJChart()" class="glass-input px-3 py-1.5 rounded-xl text-xs sm:text-sm w-full font-medium">
+              <option value="ALL" selected>ทุกระดับ Level (All Levels)</option>
+              <option value="L1">Level 1</option>
+              <option value="L2">Level 2</option>
+              <option value="L3">Level 3</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- High-Performance Levey-Jennings Chart Container with Toggle Buttons -->
+        <div class="glass-panel p-5 md:p-6 mb-6 relative w-full border-purple-200/80 shadow-liquid-lg">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <h3 id="chart-title" class="text-base sm:text-lg font-bold text-slate-900 font-['Prompt']">Levey-Jennings Chart</h3>
+              <p id="chart-subtitle" class="text-xs text-slate-600 mt-0.5">แสดงแนวโน้มค่าควบคุมคุณภาพ และเส้นกำกับ Westgard Multi-rules ±1SD, ±2SD, ±3SD</p>
+            </div>
+            
+            <div class="flex items-center gap-2.5">
+              <div id="chart-status-badge" class="px-3.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm font-['Prompt']">
+                In Control
+              </div>
+
+              <!-- Toggle Button to Show/Hide Connecting Lines between Points -->
+              <button onclick="toggleLJChartLines()" id="btn-toggle-lines" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/90 hover:bg-white text-purple-900 border border-purple-200 shadow-sm flex items-center gap-1.5 transition-all font-['Prompt']">
+                <i class="fa-solid fa-chart-line" id="icon-toggle-lines"></i>
+                <span id="text-toggle-lines">ซ่อนเส้นเชื่อมจุด</span>
+              </button>
+
+              <!-- Toggle Button to Show/Hide L-J Chart Canvas -->
+              <button onclick="toggleLJChartVisibility()" id="btn-toggle-chart" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/90 hover:bg-white text-purple-900 border border-purple-200 shadow-sm flex items-center gap-1.5 transition-all font-['Prompt']">
+                <i class="fa-solid fa-chevron-up" id="icon-toggle-chart"></i>
+                <span id="text-toggle-chart">ซ่อนกราฟ L-J</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Collapsible Chart Canvas Wrapper -->
+          <div id="lj-chart-wrapper" class="w-full h-[520px] relative transition-all duration-300">
+            <canvas id="ljChartCanvas"></canvas>
+          </div>
+        </div>
+
+        <!-- IQC History Table with Split Month & Year Filters -->
+        <div class="glass-panel p-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <h3 class="text-base font-bold text-slate-900 font-['Prompt']">รายการประเมินผล IQC ย้อนหลัง</h3>
+              <p class="text-xs text-slate-600">แสดงผลข้อมูลย้อนหลังตามการกรองเดือนและปี สามารถแก้ไขหรือลบรายการได้</p>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-700 font-['Prompt']">ตัวกรองประวัติ:</span>
+              <select id="iqc-hist-month-select" onchange="renderIQCHistory()" class="glass-input px-3 py-1.5 rounded-xl text-xs font-semibold text-purple-950">
+              </select>
+              <select id="iqc-hist-year-select" onchange="renderIQCHistory()" class="glass-input px-3 py-1.5 rounded-xl text-xs font-semibold text-purple-950">
+              </select>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto rounded-xl border border-white/80">
+            <table class="w-full text-left text-xs sm:text-sm">
+              <thead class="bg-purple-100/60 text-purple-950 border-b border-white font-semibold font-['Prompt']">
+                <tr>
+                  <th class="p-3">วันที่ทดสอบ</th>
+                  <th class="p-3">รหัสเครื่อง</th>
+                  <th class="p-3">Lot น้ำยา</th>
+                  <th class="p-3">Lot Control</th>
+                  <th class="p-3">ผล Level 1</th>
+                  <th class="p-3">ผล Level 2</th>
+                  <th class="p-3">ผล Level 3</th>
+                  <th class="p-3">ผู้ทดสอบ</th>
+                  <th class="p-3">ผู้ควบคุม</th>
+                  <th class="p-3">ผลการประเมิน</th>
+                  <th class="p-3">Westgard Rule</th>
+                  <th class="p-3 text-center">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="iqc-history-table-body" class="divide-y divide-white/60">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+
+    <!-- TAB 6: EQA -->
+    <main id="content-eqa" class="tab-content hidden space-y-6 w-full">
+      <div class="glass-panel p-8 text-center max-w-3xl mx-auto border-amber-200/70 relative overflow-hidden">
+        <div class="absolute -top-10 -left-10 w-40 h-40 bg-amber-300/20 rounded-full blur-2xl"></div>
+        <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-purple-300/20 rounded-full blur-2xl"></div>
+
+        <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-amber-400 to-orange-400 flex items-center justify-center text-white text-3xl shadow-lg mb-4">
+          <i class="fa-solid fa-screwdriver-wrench animate-bounce"></i>
+        </div>
+
+        <span class="px-3.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+          Under Development / อยู่ระหว่างการพัฒนา
+        </span>
+
+        <h2 class="text-2xl font-bold text-slate-900 mt-3 mb-2 font-['Prompt']">ระบบทะเบียนและประเมินผล EQA</h2>
+        <p class="text-sm text-slate-600 mb-6">
+          โมดูลการประเมินคุณภาพจากภายนอก (External Quality Assessment: EQA) กำลังอยู่ระหว่างการออกแบบและพัฒนาคุณสมบัติการเปรียบเทียบผลระหว่างห้องปฏิบัติการ
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left max-w-md mx-auto">
+          <div class="p-3.5 rounded-xl bg-white/70 border border-white text-xs sm:text-sm">
+            <i class="fa-solid fa-check text-emerald-600 mr-2"></i>
+            <span>รองรับผลการทดสอบจากองค์กรภายนอก</span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-white/70 border border-white text-xs sm:text-sm">
+            <i class="fa-solid fa-check text-emerald-600 mr-2"></i>
+            <span>คำนวณ SDI และ Z-Score เปรียบเทียบ</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+
+  <!-- MODAL 1: ADD / EDIT DEVICE -->
+  <div id="addDeviceModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-purple-950/20 backdrop-blur-md p-4">
+    <div class="glass-modal-panel p-6 sm:p-8 max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-liquid-lg border border-white">
+      <div class="flex justify-between items-center mb-5 pb-3 border-b border-purple-200/60">
+        <h3 id="dev-modal-title" class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-800 via-pink-700 to-indigo-700 flex items-center gap-2 font-['Prompt']">
+          <i class="fa-solid fa-laptop-medical text-purple-600"></i>
+          <span>ลงทะเบียนเครื่องตรวจ POCT ใหม่</span>
+        </h3>
+        <button onclick="closeModal('addDeviceModal')" class="w-8 h-8 rounded-full bg-purple-100/80 hover:bg-purple-200 text-purple-700 flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="deviceForm" onsubmit="handleSaveDevice(event)" class="space-y-4 text-xs sm:text-sm">
+        <input type="hidden" id="editing-device-id" value="">
+
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">ชนิดเครื่องตรวจ (Test Type):</label>
+          <div class="flex gap-2">
+            <select id="dev-test-type" required class="glass-input p-3 rounded-xl w-full">
+            </select>
+            <button type="button" onclick="promptAddSetting('TestType')" class="px-3.5 py-2 bg-purple-100 text-purple-800 rounded-xl font-bold hover:bg-purple-200 whitespace-nowrap">
+              + เพิ่มชนิด
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">ชื่อเครื่องตรวจ:</label>
+          <input type="text" id="dev-name" required placeholder="เช่น Glucose Meter #1 (ตึกประกายแสง)" class="glass-input p-3 rounded-xl w-full">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">ยี่ห้อ / รุ่น (Model):</label>
+            <input type="text" id="dev-model" required placeholder="เช่น Accu-Chek Inform II" class="glass-input p-3 rounded-xl w-full">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">Serial Number (S/N):</label>
+            <input type="text" id="dev-sn" required placeholder="เช่น SN-98765432" class="glass-input p-3 rounded-xl w-full">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">แผนกที่ใช้งาน:</label>
+          <div class="flex gap-2">
+            <select id="dev-department" required class="glass-input p-3 rounded-xl w-full">
+            </select>
+            <button type="button" onclick="promptAddSetting('Department')" class="px-3.5 py-2 bg-purple-100 text-purple-800 rounded-xl font-bold hover:bg-purple-200 whitespace-nowrap">
+              + เพิ่มแผนก
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">ผู้รับผิดชอบ (Contact):</label>
+          <div class="flex gap-2">
+            <select id="dev-contact" required class="glass-input p-3 rounded-xl w-full">
+            </select>
+            <button type="button" onclick="promptAddSetting('Contact')" class="px-3.5 py-2 bg-purple-100 text-purple-800 rounded-xl font-bold hover:bg-purple-200 whitespace-nowrap">
+              + เพิ่มชื่อ
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">วันที่เริ่มใช้ (Start Date):</label>
+            <input type="date" id="dev-start-date" required class="glass-input p-3 rounded-xl w-full">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">สถานะเครื่องตรวจ:</label>
+            <select id="dev-status" class="glass-input p-3 rounded-xl w-full">
+              <option value="พร้อมใช้" selected>พร้อมใช้</option>
+              <option value="ระหว่างซ่อม">ระหว่างซ่อม</option>
+              <option value="เลิกใช้">เลิกใช้</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pt-4 flex justify-end gap-2.5 border-t border-purple-200/60">
+          <button type="button" onclick="closeModal('addDeviceModal')" class="px-5 py-2.5 rounded-xl bg-white/80 hover:bg-white text-slate-800 font-medium">ยกเลิก</button>
+          <button type="submit" id="dev-btn-submit" class="glass-btn-primary px-6 py-2.5 rounded-xl font-bold">บันทึกข้อมูลเครื่อง</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- MODAL 2: ADD / EDIT REAGENT -->
+  <div id="addReagentModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-purple-950/20 backdrop-blur-md p-4">
+    <div class="glass-modal-panel p-6 sm:p-8 max-w-2xl w-full shadow-liquid-lg border border-white">
+      <div class="flex justify-between items-center mb-5 pb-3 border-b border-pink-200/60">
+        <h3 id="rea-modal-title" class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-700 via-purple-700 to-indigo-700 flex items-center gap-2 font-['Prompt']">
+          <i class="fa-solid fa-vial text-pink-600"></i>
+          <span>ลงทะเบียนน้ำยาใหม่</span>
+        </h3>
+        <button onclick="closeModal('addReagentModal')" class="w-8 h-8 rounded-full bg-pink-100/80 hover:bg-pink-200 text-pink-700 flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="reagentForm" onsubmit="handleSaveReagent(event)" class="space-y-4 text-xs sm:text-sm">
+        <input type="hidden" id="editing-reagent-id" value="">
+
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">รายการตรวจ (Test Item):</label>
+          <select id="rea-test-type" required class="glass-input p-3 rounded-xl w-full">
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">ชื่อน้ำยาตรวจ:</label>
+          <input type="text" id="rea-name" required placeholder="เช่น Accu-Chek Performa Test Strips (50 Strips)" class="glass-input p-3 rounded-xl w-full">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">Lot Number:</label>
+            <input type="text" id="rea-lot" required placeholder="เช่น LOT-GLU-2026A" class="glass-input p-3 rounded-xl w-full">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">วันที่หมดอายุ:</label>
+            <input type="date" id="rea-exp" required class="glass-input p-3 rounded-xl w-full">
+          </div>
+        </div>
+
+        <div class="pt-4 flex justify-end gap-2.5 border-t border-pink-200/60">
+          <button type="button" onclick="closeModal('addReagentModal')" class="px-5 py-2.5 rounded-xl bg-white/80 hover:bg-white text-slate-800 font-medium">ยกเลิก</button>
+          <button type="submit" id="rea-btn-submit" class="glass-btn-primary px-6 py-2.5 rounded-xl font-bold">บันทึกข้อมูลน้ำยา</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- MODAL 3: ADD / EDIT IQC CONTROL REAGENT -->
+  <div id="addIQCControlModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-purple-950/20 backdrop-blur-md p-4">
+    <div class="glass-modal-panel p-6 sm:p-8 max-w-3xl w-full max-h-[92vh] overflow-y-auto shadow-liquid-lg border border-white">
+      <div class="flex justify-between items-center mb-5 pb-3 border-b border-sky-200/60">
+        <h3 id="ctl-modal-title" class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-700 via-purple-700 to-indigo-700 flex items-center gap-2 font-['Prompt']">
+          <i class="fa-solid fa-filter-circle-dollar text-sky-600"></i>
+          <span>ลงทะเบียนสารควบคุม IQC ใหม่ (Mean & SD)</span>
+        </h3>
+        <button onclick="closeModal('addIQCControlModal')" class="w-8 h-8 rounded-full bg-sky-100/80 hover:bg-sky-200 text-sky-700 flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="iqcControlForm" onsubmit="handleSaveIQCControl(event)" class="space-y-4 text-xs sm:text-sm">
+        <input type="hidden" id="editing-control-id" value="">
+
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">รายการตรวจ (Test Item):</label>
+          <select id="ctl-test-type" required class="glass-input p-3 rounded-xl w-full">
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">ชื่อสารควบคุมคุณภาพ:</label>
+            <input type="text" id="ctl-name" required placeholder="เช่น Glucose Control Solution Level 1 & 2" class="glass-input p-3 rounded-xl w-full">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">Lot Number:</label>
+            <input type="text" id="ctl-lot" required placeholder="เช่น CTL-GLU-99" class="glass-input p-3 rounded-xl w-full">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">จำนวน Level ที่กำหนด:</label>
+          <select id="ctl-levels" onchange="toggleControlLevels()" class="glass-input p-3 rounded-xl w-full">
+            <option value="1">1 Level</option>
+            <option value="2" selected>2 Levels</option>
+            <option value="3">3 Levels</option>
+          </select>
+        </div>
+
+        <div id="level-inputs-container" class="space-y-3 pt-2">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">วันที่เริ่มใช้:</label>
+            <input type="date" id="ctl-start" required class="glass-input p-3 rounded-xl w-full">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">วันที่หมดอายุ:</label>
+            <input type="date" id="ctl-exp" required class="glass-input p-3 rounded-xl w-full">
+          </div>
+        </div>
+
+        <div class="pt-4 flex justify-end gap-2.5 border-t border-sky-200/60">
+          <button type="button" onclick="closeModal('addIQCControlModal')" class="px-5 py-2.5 rounded-xl bg-white/80 hover:bg-white text-slate-800 font-medium">ยกเลิก</button>
+          <button type="submit" id="ctl-btn-submit" class="glass-btn-primary px-6 py-2.5 rounded-xl font-bold">บันทึกสารควบคุม</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- MODAL 4: IQC REPORT FORM (ADD & EDIT) -->
+  <div id="iqcReportModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-purple-950/20 backdrop-blur-md p-4">
+    <div class="glass-modal-panel p-6 sm:p-8 max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-liquid-lg border border-white">
+      <div class="flex justify-between items-center mb-5 pb-3 border-b border-purple-200/60">
+        <h3 id="iqc-modal-title" class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-800 via-pink-700 to-indigo-700 flex items-center gap-2 font-['Prompt']">
+          <i class="fa-solid fa-file-signature text-purple-600"></i>
+          <span>รายงานผลการตรวจ IQC</span>
+        </h3>
+        <button onclick="closeModal('iqcReportModal')" class="w-8 h-8 rounded-full bg-purple-100/80 hover:bg-purple-200 text-purple-700 flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="iqcReportForm" onsubmit="handleSaveIQCResult(event)" class="space-y-4 text-xs sm:text-sm">
+        <input type="hidden" id="editing-result-id" value="">
+
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">วันที่ทำการทดสอบ:</label>
+          <input type="date" id="iqc-test-date" required class="glass-input p-3 rounded-xl w-full">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">แผนกที่ใช้งาน:</label>
+            <select id="iqc-dept" onchange="onIQCCascadeChange()" class="glass-input p-3 rounded-xl w-full">
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">รายการตรวจ (Test):</label>
+            <select id="iqc-test-type" onchange="onIQCCascadeChange()" class="glass-input p-3 rounded-xl w-full">
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">เครื่องตรวจวิเคราะห์:</label>
+          <select id="iqc-device-id" required class="glass-input p-3 rounded-xl w-full">
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">Lot น้ำยา:</label>
+            <select id="iqc-reagent-lot" required class="glass-input p-3 rounded-xl w-full">
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">Lot IQC:</label>
+            <select id="iqc-control-lot" onchange="onIQCControlChange()" required class="glass-input p-3 rounded-xl w-full">
+            </select>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-gradient-to-br from-purple-50/90 to-pink-50/90 border border-purple-200/80 space-y-3" id="iqc-level-inputs">
+          <h4 class="font-bold text-purple-950 text-xs sm:text-sm font-['Prompt']">ผลการควบคุมคุณภาพ (กรอกค่าตัวเลขผล IQC ที่ตรวจได้):</h4>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">ผู้ทำการทดสอบ:</label>
+            <div class="flex gap-2">
+              <select id="iqc-tester" required class="glass-input p-3 rounded-xl w-full">
+              </select>
+              <button type="button" onclick="promptAddSetting('Contact')" class="px-3 py-2 bg-purple-100 text-purple-800 rounded-xl font-bold">
+                +
+              </button>
+            </div>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">ผู้ควบคุมการทดสอบ:</label>
+            <div class="flex gap-2">
+              <select id="iqc-supervisor" required class="glass-input p-3 rounded-xl w-full">
+              </select>
+              <button type="button" onclick="promptAddSetting('Supervisor')" class="px-3 py-2 bg-purple-100 text-purple-800 rounded-xl font-bold">
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">หมายเหตุเพิ่มเติม:</label>
+          <input type="text" id="iqc-notes" placeholder="ระบุเหตุผลกรณี Out of Control หรือข้อมูลอื่น" class="glass-input p-3 rounded-xl w-full">
+        </div>
+
+        <div class="pt-4 flex justify-end gap-2.5 border-t border-purple-200/60">
+          <button type="button" onclick="closeModal('iqcReportModal')" class="px-5 py-2.5 rounded-xl bg-white/80 hover:bg-white text-slate-800 font-medium">ยกเลิก</button>
+          <button type="submit" id="iqc-btn-submit" class="glass-btn-primary px-6 py-2.5 rounded-xl font-bold">วิเคราะห์ & บันทึกผล IQC</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- MODAL 5: SETTINGS & DEV MODE -->
+  <div id="settingsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-purple-950/20 backdrop-blur-md p-4">
+    <div class="glass-modal-panel p-6 sm:p-8 max-w-5xl w-full max-h-[88vh] overflow-y-auto shadow-liquid-lg border border-white">
+      
+      <div class="flex justify-between items-center mb-5 pb-3 border-b border-purple-200/60">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-code text-purple-600"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-800 via-pink-700 to-indigo-700 font-['Prompt']">
+              ตั้งค่าระบบ & Dev Mode
+            </h3>
+            <p class="text-xs text-slate-600">ส่วนจัดการตัวเลือก และการเชื่อมต่อ Google Sheets Database</p>
+          </div>
+        </div>
+
+        <button onclick="closeModal('settingsModal')" class="w-8 h-8 rounded-full bg-purple-100/80 hover:bg-purple-200 text-purple-700 flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-6 text-xs sm:text-sm">
+        
+        <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-50/90 to-teal-50/90 border border-emerald-200/80 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div class="flex items-center gap-3 overflow-hidden">
+            <div class="glass-panel px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 text-slate-800 border-white whitespace-nowrap flex-shrink-0">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+              <span>Google Sheets Sync</span>
+            </div>
+            <span class="text-xs text-slate-800 font-mono font-semibold whitespace-nowrap overflow-x-auto" id="current-sheet-id-display">ID: 1q0cymT8Wn3BD1BPYG1CRK_X-RSMBMu2dtqvVcN2pq1U</span>
+          </div>
+
+          <button onclick="promptEditSpreadsheetId()" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center gap-1.5 font-['Prompt'] whitespace-nowrap flex-shrink-0">
+            <i class="fa-solid fa-pen-to-square"></i>
+            <span>แก้ไข Spreadsheet ID</span>
+          </button>
+        </div>
+
+        <div class="space-y-5">
+          <div>
+            <h4 class="font-bold text-slate-900 mb-2 flex justify-between items-center font-['Prompt']">
+              <span>1. ชนิดเครื่องตรวจ / รายการตรวจ (Test Types)</span>
+              <button onclick="promptAddSetting('TestType')" class="text-xs text-purple-700 hover:underline">+ เพิ่มใหม่</button>
+            </h4>
+            <div id="setting-list-TestType" class="flex flex-wrap gap-1.5 p-3 rounded-2xl bg-white/70 border border-white">
+            </div>
+          </div>
+
+          <div>
+            <h4 class="font-bold text-slate-900 mb-2 flex justify-between items-center font-['Prompt']">
+              <span>2. แผนกที่ใช้งาน (Departments)</span>
+              <button onclick="promptAddSetting('Department')" class="text-xs text-purple-700 hover:underline">+ เพิ่มใหม่</button>
+            </h4>
+            <div id="setting-list-Department" class="flex flex-wrap gap-1.5 p-3 rounded-2xl bg-white/70 border border-white max-h-40 overflow-y-auto">
+            </div>
+          </div>
+
+          <div>
+            <h4 class="font-bold text-slate-900 mb-2 flex justify-between items-center font-['Prompt']">
+              <span>3. รายชื่อผู้รับผิดชอบ (Contacts / Testers)</span>
+              <button onclick="promptAddSetting('Contact')" class="text-xs text-purple-700 hover:underline">+ เพิ่มใหม่</button>
+            </h4>
+            <div id="setting-list-Contact" class="flex flex-wrap gap-1.5 p-3 rounded-2xl bg-white/70 border border-white">
+            </div>
+          </div>
+
+          <div>
+            <h4 class="font-bold text-slate-900 mb-2 flex justify-between items-center font-['Prompt']">
+              <span>4. รายชื่อผู้ควบคุมการทดสอบ (Supervisors)</span>
+              <button onclick="promptAddSetting('Supervisor')" class="text-xs text-purple-700 hover:underline">+ เพิ่มใหม่</button>
+            </h4>
+            <div id="setting-list-Supervisor" class="flex flex-wrap gap-1.5 p-3 rounded-2xl bg-white/70 border border-white">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MODAL 6: EXECUTIVE MONTHLY IQC REPORT (WITH HIGH-FIDELITY PDF & JPEG EXPORT) -->
+  <div id="monthlyReportModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-purple-950/20 backdrop-blur-md p-4">
+    <div class="glass-modal-panel p-6 sm:p-8 max-w-4xl w-full max-h-[94vh] overflow-y-auto shadow-liquid-lg border border-white">
+      
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-3 border-b border-emerald-200/80">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg font-bold">
+            <i class="fa-solid fa-file-invoice"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-800 to-teal-700 font-['Prompt']">
+              รายงานสรุปผลการควบคุมคุณภาพประจำเดือน
+            </h3>
+            <p class="text-xs text-slate-600">เอกสารรายงานสรุป IQC ผู้บริหารและหัวหน้าห้องปฏิบัติการ</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Month Selector -->
+          <select id="rpt-month-select" onchange="renderMonthlyReportDoc()" class="glass-input px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-950">
+          </select>
+
+          <!-- PDF Export Button -->
+          <button onclick="exportReportPDF()" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center gap-1.5 font-['Prompt'] whitespace-nowrap">
+            <i class="fa-solid fa-file-pdf"></i>
+            <span>ส่งออก PDF</span>
+          </button>
+
+          <!-- JPEG Export Button -->
+          <button onclick="exportReportJPEG()" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-sm flex items-center gap-1.5 font-['Prompt'] whitespace-nowrap">
+            <i class="fa-solid fa-image"></i>
+            <span>ส่งออก JPEG</span>
+          </button>
+
+          <button onclick="closeModal('monthlyReportModal')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- High-Fidelity Printable Document Body -->
+      <div id="monthly-report-printable" class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 text-slate-900 shadow-sm space-y-6 font-['Sarabun']">
+        
+        <!-- Document Header -->
+        <div class="flex justify-between items-start border-b-2 border-purple-900 pb-4">
+          <div>
+            <div class="flex items-center gap-2 text-purple-950 font-bold text-lg sm:text-xl font-['Prompt']">
+              <i class="fa-solid fa-vial-circle-check text-purple-600"></i>
+              <span>POCT QualiAgentics QA System</span>
+            </div>
+            <h2 id="rpt-doc-title" class="text-xl sm:text-2xl font-bold text-slate-900 mt-1 font-['Prompt']">
+              รายงานสรุปผลการควบคุมคุณภาพภายใน (IQC) ประจำเดือน
+            </h2>
+            <p class="text-xs text-slate-600 mt-0.5">งานควบคุมคุณภาพเครื่องตรวจวิเคราะห์ ณ จุดดูแลผู้ป่วย (Point-of-Care Testing)</p>
+          </div>
+          <div class="text-right text-xs text-slate-600 font-mono">
+            <p id="rpt-doc-date">วันที่ออกรายงาน: 4/7/2026</p>
+            <p class="font-bold text-purple-800">สถานะ: Verified Report</p>
+          </div>
+        </div>
+
+        <!-- Key Metrics Cards Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+            <p class="text-[11px] font-semibold text-slate-600">จำนวนการทดสอบ IQC</p>
+            <h4 id="rpt-stat-total" class="text-2xl font-bold text-slate-900 mt-1 font-['Prompt']">0</h4>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-center">
+            <p class="text-[11px] font-semibold text-emerald-800">ผ่านเกณฑ์ (In Control)</p>
+            <h4 id="rpt-stat-pass" class="text-2xl font-bold text-emerald-700 mt-1 font-['Prompt']">0</h4>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-center">
+            <p class="text-[11px] font-semibold text-rose-800">ไม่ผ่านเกณฑ์ (Out/Warn)</p>
+            <h4 id="rpt-stat-out" class="text-2xl font-bold text-rose-700 mt-1 font-['Prompt']">0</h4>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-purple-50 border border-purple-200 text-center">
+            <p class="text-[11px] font-semibold text-purple-900">อัตราผ่านเกณฑ์ (%)</p>
+            <h4 id="rpt-stat-rate" class="text-2xl font-bold text-purple-800 mt-1 font-['Prompt']">100%</h4>
+          </div>
+        </div>
+
+        <!-- Table 1: Device-by-Device IQC Performance -->
+        <div>
+          <h4 class="font-bold text-sm text-slate-900 mb-2 font-['Prompt']">1. สรุปผลการประเมิน IQC จำแนกตามเครื่องตรวจ (Device Performance)</h4>
+          <table class="w-full text-left text-xs border border-slate-300">
+            <thead class="bg-slate-100 text-slate-900 font-bold border-b border-slate-300">
+              <tr>
+                <th class="p-2 border-r border-slate-300">รหัสเครื่อง</th>
+                <th class="p-2 border-r border-slate-300">ชื่อเครื่องตรวจ</th>
+                <th class="p-2 border-r border-slate-300">แผนก</th>
+                <th class="p-2 border-r border-slate-300 text-center">จำนวนทดสอบ</th>
+                <th class="p-2 border-r border-slate-300 text-center">ผ่านเกณฑ์</th>
+                <th class="p-2 border-r border-slate-300 text-center">ไม่ผ่านเกณฑ์</th>
+                <th class="p-2 text-center">% ผ่านเกณฑ์</th>
+              </tr>
+            </thead>
+            <tbody id="rpt-device-table-body" class="divide-y divide-slate-200">
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Table 2: Westgard Violations & Action Logs -->
+        <div>
+          <h4 class="font-bold text-sm text-slate-900 mb-2 font-['Prompt']">2. รายการการเตือนและละเมิดกฎ Westgard (Westgard Violation Log)</h4>
+          <table class="w-full text-left text-xs border border-slate-300">
+            <thead class="bg-slate-100 text-slate-900 font-bold border-b border-slate-300">
+              <tr>
+                <th class="p-2 border-r border-slate-300">วันที่</th>
+                <th class="p-2 border-r border-slate-300">รหัสเครื่อง</th>
+                <th class="p-2 border-r border-slate-300">Lot IQC</th>
+                <th class="p-2 border-r border-slate-300">กฎที่ละเมิด</th>
+                <th class="p-2 border-r border-slate-300">สถานะ</th>
+                <th class="p-2 border-r border-slate-300">ผู้ทดสอบ</th>
+                <th class="p-2">หมายเหตุการแก้ไข</th>
+              </tr>
+            </thead>
+            <tbody id="rpt-violation-table-body" class="divide-y divide-slate-200">
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Formal Signatures Block -->
+        <div class="pt-8 grid grid-cols-2 gap-8 text-center text-xs text-slate-800 border-t border-slate-200 mt-6">
+          <div class="space-y-8">
+            <p>ลงชื่อ..............................................................<br>(ผู้จัดทำรายงาน / นักเทคนิคการแพทย์)</p>
+            <p>วันที่ ............. / ............. / ....................</p>
+          </div>
+          <div class="space-y-8">
+            <p>ลงชื่อ..............................................................<br>(ผู้ควบคุมคุณภาพ / หัวหน้าห้องปฏิบัติการ)</p>
+            <p>วันที่ ............. / ............. / ....................</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- JavaScript Application Controller -->
+  <script>
+    let appState = {
+      spreadsheetId: '',
+      settings: [],
+      devices: [],
+      reagents: [],
+      controls: [],
+      results: []
+    };
+
+    let ljChartInstance = null;
+    let progressTimer = null;
+    let ljLinesUserOverride = null; // null = follow default (ALL = false, Single = true)
+
+    const THAI_MONTHS = [
+      { val: 'ALL', text: 'ทุกเดือน (ทั้งหมด)' },
+      { val: '01', text: 'มกราคม' },
+      { val: '02', text: 'กุมภาพันธ์' },
+      { val: '03', text: 'มีนาคม' },
+      { val: '04', text: 'เมษายน' },
+      { val: '05', text: 'พฤษภาคม' },
+      { val: '06', text: 'มิถุนายน' },
+      { val: '07', text: 'กรกฎาคม' },
+      { val: '08', text: 'สิงหาคม' },
+      { val: '09', text: 'กันยายน' },
+      { val: '10', text: 'ตุลาคม' },
+      { val: '11', text: 'พฤศจิกายน' },
+      { val: '12', text: 'ธันวาคม' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const todayStr = new Date().toISOString().split('T')[0];
+      document.getElementById('dev-start-date').value = todayStr;
+      document.getElementById('rea-exp').value = todayStr;
+      document.getElementById('ctl-start').value = todayStr;
+      document.getElementById('ctl-exp').value = todayStr;
+      document.getElementById('iqc-test-date').value = todayStr;
+
+      toggleControlLevels();
+      fetchData();
+    });
+
+    function fetchData() {
+      showLoading(true);
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(onDataLoaded)
+          .withFailureHandler(onDataError)
+          .getInitialData();
+      } else {
+        setTimeout(() => {
+          onDataLoaded(getMockData());
+        }, 600);
+      }
+    }
+
+    function onDataLoaded(data) {
+      appState = data;
+      showLoading(false);
+      if (data.spreadsheetId) {
+        document.getElementById('current-sheet-id-display').innerText = `ID: ${data.spreadsheetId}`;
+      }
+      renderAllViews();
+    }
+
+    function onDataError(err) {
+      showLoading(false);
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาดในการโหลดข้อมูล',
+        text: err.message || err,
+        confirmButtonColor: '#a855f7'
+      });
+    }
+
+    function showLoading(show) {
+      const el = document.getElementById('loadingOverlay');
+      const bar = document.getElementById('loadingProgressBar');
+      if (show) {
+        el.classList.remove('hidden');
+        el.classList.add('flex');
+        bar.style.width = '10%';
+        if (progressTimer) clearInterval(progressTimer);
+        
+        let width = 10;
+        progressTimer = setInterval(() => {
+          if (width < 85) {
+            width += Math.floor(Math.random() * 12) + 5;
+            bar.style.width = width + '%';
+          }
+        }, 150);
+      } else {
+        if (progressTimer) clearInterval(progressTimer);
+        bar.style.width = '100%';
+        setTimeout(() => {
+          el.classList.add('hidden');
+          el.classList.remove('flex');
+          bar.style.width = '0%';
+        }, 300);
+      }
+    }
+
+    function renderAllViews() {
+      populateDropdowns();
+      renderDashboard();
+      renderDevicesTable();
+      renderReagentsTable();
+      renderControlsCards();
+      renderIQCHistory();
+      onLJTestChange();
+      renderSettingsPills();
+    }
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-tab').forEach(el => {
+        el.classList.remove('bg-gradient-to-r', 'from-purple-600', 'to-pink-600', 'text-white', 'shadow-md');
+        el.classList.add('text-slate-700', 'hover:bg-white/60');
+      });
+
+      document.getElementById(`content-${tabName}`).classList.remove('hidden');
+      const activeTabBtn = document.getElementById(`tab-${tabName}`);
+      activeTabBtn.classList.remove('text-slate-700', 'hover:bg-white/60');
+      activeTabBtn.classList.add('bg-gradient-to-r', 'from-purple-600', 'to-pink-600', 'text-white', 'shadow-md');
+    }
+
+    function populateDropdowns() {
+      const testTypes = getSettingValues('TestType');
+      const departments = getSettingValues('Department');
+      const contacts = getSettingValues('Contact');
+      const supervisors = getSettingValues('Supervisor');
+
+      // Modals
+      fillSelect('dev-test-type', testTypes, '-- เลือกรายการตรวจ --');
+      fillSelect('rea-test-type', testTypes, '-- เลือกรายการตรวจ --');
+      fillSelect('ctl-test-type', testTypes, '-- เลือกรายการตรวจ --');
+
+      // Table Search Filters
+      fillSelect('device-test-filter', testTypes, 'ทุกรายการตรวจ (Test)');
+      fillSelect('device-dept-filter', departments, 'ทุกแผนกที่ใช้งาน');
+      fillSelect('reagent-test-filter', testTypes, 'ทุกรายการตรวจ (Test)');
+      fillSelect('control-test-filter', testTypes, 'ทุกรายการตรวจ (Test)');
+
+      fillSelect('dev-department', departments, '-- เลือกแผนก --');
+
+      fillSelect('dev-contact', contacts, '-- เลือกผู้รับผิดชอบ --');
+      fillSelect('iqc-tester', contacts, '-- เลือกผู้ทดสอบ --');
+      fillSelect('iqc-supervisor', supervisors, '-- เลือกผู้ควบคุม --');
+
+      // IQC Monthly Report Modal Dropdowns
+      fillSelect('iqc-dept', departments, 'ทุกแผนกที่ใช้งาน');
+      fillSelect('iqc-test-type', testTypes, 'ทุกรายการตรวจ (Test)');
+
+      // L-J Chart Test Filter Dropdown
+      fillSelect('lj-test-select', testTypes, 'ทุกรายการตรวจ (Test)');
+
+      // Populate Month & Year Dropdowns (Defaulting to Current Month & Year)
+      populateMonthAndYearFilters();
+    }
+
+    function populateMonthAndYearFilters() {
+      const now = new Date();
+      const curMonth = String(now.getMonth() + 1).padStart(2, '0');
+      const curYear = String(now.getFullYear());
+
+      // Extract unique years from dataset + current year
+      const yearSet = new Set([curYear]);
+      appState.results.forEach(r => {
+        if (r.TestDate && r.TestDate.length >= 4) {
+          yearSet.add(r.TestDate.slice(0, 4));
+        }
+      });
+      const sortedYears = Array.from(yearSet).sort().reverse();
+      const yearOpts = [{ val: 'ALL', text: 'ทุกปี (ทั้งหมด)' }].concat(
+        sortedYears.map(y => ({ val: y, text: `${y} (${parseInt(y) + 543})` }))
+      );
+
+      // 1. Dashboard Month & Year Selectors
+      const dashM = document.getElementById('dash-month-select');
+      const dashY = document.getElementById('dash-year-select');
+      if (dashM && dashY) {
+        fillSelectCustom('dash-month-select', THAI_MONTHS);
+        fillSelectCustom('dash-year-select', yearOpts);
+        if (!dashM.dataset.initialized) {
+          dashM.value = curMonth;
+          dashY.value = curYear;
+          dashM.dataset.initialized = 'true';
+        }
+      }
+
+      // 2. IQC History Month & Year Selectors
+      const histM = document.getElementById('iqc-hist-month-select');
+      const histY = document.getElementById('iqc-hist-year-select');
+      if (histM && histY) {
+        fillSelectCustom('iqc-hist-month-select', THAI_MONTHS);
+        fillSelectCustom('iqc-hist-year-select', yearOpts);
+        if (!histM.dataset.initialized) {
+          histM.value = curMonth;
+          histY.value = curYear;
+          histM.dataset.initialized = 'true';
+        }
+      }
+
+      // 3. Monthly Executive Report Modal Month Filter
+      populateMonthFiltersForReport();
+    }
+
+    function populateMonthFiltersForReport() {
+      const dates = appState.results.map(r => r.TestDate);
+      const today = new Date().toISOString().slice(0, 7); // e.g. "2026-07"
+      const monthSet = new Set([today]);
+      dates.forEach(d => { if (d && d.length >= 7) monthSet.add(d.slice(0, 7)); });
+
+      const sortedMonths = Array.from(monthSet).sort().reverse();
+      const monthNames = {
+        '01': 'มกราคม', '02': 'กุมภาพันธ์', '03': 'มีนาคม', '04': 'เมษายน',
+        '05': 'พฤษภาคม', '06': 'มิถุนายน', '07': 'กรกฎาคม', '08': 'สิงหาคม',
+        '09': 'กันยายน', '10': 'ตุลาคม', '11': 'พฤศจิกายน', '12': 'ธันวาคม'
+      };
+
+      const rptFilter = document.getElementById('rpt-month-select');
+      if (rptFilter) {
+        const curVal = rptFilter.value;
+        rptFilter.innerHTML = '';
+        sortedMonths.forEach(m => {
+          const [yyyy, mm] = m.split('-');
+          const thYear = parseInt(yyyy) + 543;
+          rptFilter.innerHTML += `<option value="${m}">${monthNames[mm] || mm} ${thYear}</option>`;
+        });
+        if (curVal && monthSet.has(curVal)) rptFilter.value = curVal;
+      }
+    }
+
+    function getSettingValues(category) {
+      return appState.settings
+        .filter(s => s.Category === category)
+        .map(s => s.Value);
+    }
+
+    function fillSelect(elementId, optionsArray, defaultOptionText = null) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      el.innerHTML = defaultOptionText ? `<option value="">${defaultOptionText}</option>` : '';
+      optionsArray.forEach(opt => {
+        el.innerHTML += `<option value="${opt}">${opt}</option>`;
+      });
+    }
+
+    function fillSelectCustom(elementId, opts) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      el.innerHTML = opts.map(o => `<option value="${o.val}">${o.text}</option>`).join('');
+    }
+
+    function renderDashboard() {
+      const totalDevices = appState.devices.length;
+      const readyDevices = appState.devices.filter(d => d.Status === 'พร้อมใช้').length;
+      const repairDevices = appState.devices.filter(d => d.Status === 'ระหว่างซ่อม').length;
+      const retiredDevices = appState.devices.filter(d => d.Status === 'เลิกใช้').length;
+
+      document.getElementById('dash-total-devices').innerText = totalDevices;
+      document.getElementById('dash-ready-count').innerText = `${readyDevices} เครื่อง`;
+
+      if (totalDevices > 0) {
+        document.getElementById('dash-ready-bar').style.width = `${(readyDevices / totalDevices) * 100}%`;
+        document.getElementById('dash-repair-bar').style.width = `${(repairDevices / totalDevices) * 100}%`;
+        document.getElementById('dash-retired-bar').style.width = `${(retiredDevices / totalDevices) * 100}%`;
+      }
+
+      document.getElementById('dash-total-reagents').innerText = appState.reagents.length;
+      document.getElementById('dash-total-controls').innerText = appState.controls.length;
+
+      const totalResults = appState.results.length;
+      const inControlResults = appState.results.filter(r => r.Status === 'In Control').length;
+      const passRate = totalResults > 0 ? Math.round((inControlResults / totalResults) * 100) : 100;
+
+      document.getElementById('dash-iqc-pass-rate').innerText = `${passRate}%`;
+      document.getElementById('dash-iqc-ratio').innerText = `${inControlResults} / ${totalResults - inControlResults}`;
+
+      // Dashboard Recent Table with Split Month & Year Filter (Show ALL matching records)
+      const selMonth = document.getElementById('dash-month-select')?.value || 'ALL';
+      const selYear = document.getElementById('dash-year-select')?.value || 'ALL';
+
+      let filteredRes = appState.results.slice();
+      if (selMonth !== 'ALL') {
+        filteredRes = filteredRes.filter(r => r.TestDate && r.TestDate.length >= 7 && r.TestDate.slice(5, 7) === selMonth);
+      }
+      if (selYear !== 'ALL') {
+        filteredRes = filteredRes.filter(r => r.TestDate && r.TestDate.length >= 4 && r.TestDate.slice(0, 4) === selYear);
+      }
+
+      const recentTable = document.getElementById('dash-recent-iqc-table');
+      recentTable.innerHTML = '';
+
+      if (filteredRes.length === 0) {
+        recentTable.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">ไม่พบข้อมูลการทดสอบ IQC ในช่วงเวลาที่เลือก</td></tr>`;
+      } else {
+        filteredRes.slice().reverse().forEach(res => {
+          const badgeClass = res.Status === 'In Control' 
+            ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
+            : 'bg-rose-100 text-rose-800 border-rose-300';
+
+          recentTable.innerHTML += `
+            <tr class="hover:bg-white/40">
+              <td class="p-3 font-medium">${res.TestDate}</td>
+              <td class="p-3 font-semibold text-purple-950 font-mono">${res.DeviceID}</td>
+              <td class="p-3 font-mono">${res.ControlLot}</td>
+              <td class="p-3">${res.TesterName}</td>
+              <td class="p-3">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold border ${badgeClass}">
+                  ${res.Status}
+                </span>
+              </td>
+              <td class="p-3 font-semibold text-rose-600">${res.ViolatedRules || 'None'}</td>
+            </tr>
+          `;
+        });
+      }
+
+      const deptList = document.getElementById('dash-dept-list');
+      deptList.innerHTML = '';
+      const depts = getSettingValues('Department');
+      depts.forEach(dept => {
+        const count = appState.devices.filter(d => d.Department === dept).length;
+        if (count > 0) {
+          deptList.innerHTML += `
+            <div class="flex justify-between items-center p-2.5 rounded-xl bg-white/60 border border-white text-xs sm:text-sm">
+              <span class="font-medium text-slate-800">${dept}</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-bold font-mono">${count} เครื่อง</span>
+            </div>
+          `;
+        }
+      });
+    }
+
+    function renderDevicesTable() {
+      filterDevices();
+    }
+
+    function filterDevices() {
+      const search = (document.getElementById('device-search')?.value || '').toLowerCase();
+      const testFilter = document.getElementById('device-test-filter')?.value || '';
+      const deptFilter = document.getElementById('device-dept-filter')?.value || '';
+      const statusFilter = document.getElementById('device-status-filter')?.value || '';
+
+      const filtered = appState.devices.filter(d => {
+        const matchSearch = d.DeviceID.toLowerCase().includes(search) || 
+                            d.DeviceName.toLowerCase().includes(search) || 
+                            d.SerialNumber.toLowerCase().includes(search);
+        const matchTest = testFilter ? d.TestType === testFilter : true;
+        const matchDept = deptFilter ? d.Department === deptFilter : true;
+        const matchStatus = statusFilter ? d.Status === statusFilter : true;
+        return matchSearch && matchTest && matchDept && matchStatus;
+      });
+
+      const tbody = document.getElementById('devices-table-body');
+      tbody.innerHTML = '';
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-slate-400">ไม่พบเครื่องตรวจตามเงื่อนไขค้นหา</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(d => {
+        let statusBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+        if (d.Status === 'ระหว่างซ่อม') statusBadgeClass = 'bg-amber-100 text-amber-800 border-amber-300';
+        if (d.Status === 'เลิกใช้') statusBadgeClass = 'bg-rose-100 text-rose-800 border-rose-300';
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-white/50 transition-colors">
+            <td class="p-3.5 font-bold text-purple-950 font-mono">${d.DeviceID}</td>
+            <td class="p-3.5 font-semibold text-slate-900">${d.DeviceName}</td>
+            <td class="p-3.5"><span class="px-2.5 py-0.5 rounded-md bg-purple-50 text-purple-800 font-medium">${d.TestType}</span></td>
+            <td class="p-3.5">${d.Model}</td>
+            <td class="p-3.5 font-mono text-slate-700">${d.SerialNumber}</td>
+            <td class="p-3.5"><span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 font-medium">${d.Department}</span></td>
+            <td class="p-3.5">${d.Contact}</td>
+            <td class="p-3.5 font-mono">${d.StartDate}</td>
+            <td class="p-3.5 text-center">
+              <select onchange="updateDeviceStatusInline('${d.DeviceID}', this.value)" class="glass-input px-2 py-1 rounded-lg text-xs font-bold border ${statusBadgeClass}">
+                <option value="พร้อมใช้" ${d.Status === 'พร้อมใช้' ? 'selected' : ''}>พร้อมใช้</option>
+                <option value="ระหว่างซ่อม" ${d.Status === 'ระหว่างซ่อม' ? 'selected' : ''}>ระหว่างซ่อม</option>
+                <option value="เลิกใช้" ${d.Status === 'เลิกใช้' ? 'selected' : ''}>เลิกใช้</option>
+              </select>
+            </td>
+            <td class="p-3.5 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <button onclick="openEditDeviceModal('${d.DeviceID}')" class="px-2.5 py-1 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-800 font-medium text-xs border border-purple-200">
+                  <i class="fa-solid fa-pen-to-square mr-1"></i>แก้ไข
+                </button>
+                <button onclick="confirmDeleteDevice('${d.DeviceID}')" class="px-2.5 py-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-medium text-xs border border-rose-200">
+                  <i class="fa-solid fa-trash-can mr-1"></i>ลบ
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function updateDeviceStatusInline(deviceId, newStatus) {
+      const dev = appState.devices.find(d => d.DeviceID === deviceId);
+      if (dev) dev.Status = newStatus;
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.updateDeviceStatus(deviceId, newStatus);
+      }
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: `อัปเดตสถานะ ${deviceId} เป็น "${newStatus}" แล้ว`,
+        showConfirmButton: false,
+        timer: 2000
+      });
+
+      renderDashboard();
+      renderDevicesTable();
+    }
+
+    function renderReagentsTable() {
+      filterReagents();
+    }
+
+    function filterReagents() {
+      const search = (document.getElementById('reagent-search')?.value || '').toLowerCase();
+      const testFilter = document.getElementById('reagent-test-filter')?.value || '';
+      const expFilter = document.getElementById('reagent-exp-filter')?.value || '';
+
+      const today = new Date();
+
+      const filtered = appState.reagents.filter(r => {
+        const matchSearch = r.ReagentID.toLowerCase().includes(search) || 
+                            r.ReagentName.toLowerCase().includes(search) || 
+                            String(r.LotNumber).toLowerCase().includes(search);
+        const matchTest = testFilter ? r.TestType === testFilter : true;
+
+        const expDate = new Date(r.ExpiryDate);
+        const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+        let matchExp = true;
+        if (expFilter === 'normal') matchExp = diffDays > 30;
+        if (expFilter === 'expiring') matchExp = diffDays > 0 && diffDays <= 30;
+        if (expFilter === 'expired') matchExp = diffDays <= 0;
+
+        return matchSearch && matchTest && matchExp;
+      });
+
+      const tbody = document.getElementById('reagents-table-body');
+      tbody.innerHTML = '';
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">ไม่พบรายการน้ำยาตามเงื่อนไขค้นหา</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(r => {
+        const expDate = new Date(r.ExpiryDate);
+        const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+
+        let statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">ปกติ (เหลือ ${diffDays} วัน)</span>`;
+        if (diffDays <= 0) {
+          statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-300">หมดอายุแล้ว!</span>`;
+        } else if (diffDays <= 30) {
+          statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">ใกล้หมดอายุ (${diffDays} วัน)</span>`;
+        }
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-white/50">
+            <td class="p-3.5 font-bold text-pink-950 font-mono">${r.ReagentID}</td>
+            <td class="p-3.5 font-semibold text-slate-800">${r.TestType}</td>
+            <td class="p-3.5 text-slate-900">${r.ReagentName}</td>
+            <td class="p-3.5 font-mono text-purple-800 font-bold">${r.LotNumber}</td>
+            <td class="p-3.5 font-mono">${r.ExpiryDate}</td>
+            <td class="p-3.5">${statusBadge}</td>
+            <td class="p-3.5 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <button onclick="openEditReagentModal('${r.ReagentID}')" class="px-2.5 py-1 rounded-lg bg-pink-100 hover:bg-pink-200 text-pink-800 font-medium text-xs border border-pink-200">
+                  <i class="fa-solid fa-pen-to-square mr-1"></i>แก้ไข
+                </button>
+                <button onclick="confirmDeleteReagent('${r.ReagentID}')" class="px-2.5 py-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-medium text-xs border border-rose-200">
+                  <i class="fa-solid fa-trash-can mr-1"></i>ลบ
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function renderControlsCards() {
+      filterControls();
+    }
+
+    function filterControls() {
+      const search = (document.getElementById('control-search')?.value || '').toLowerCase();
+      const testFilter = document.getElementById('control-test-filter')?.value || '';
+      const expFilter = document.getElementById('control-exp-filter')?.value || '';
+
+      const today = new Date();
+
+      const filtered = appState.controls.filter(c => {
+        const matchSearch = c.ControlID.toLowerCase().includes(search) || 
+                            c.ControlName.toLowerCase().includes(search) || 
+                            String(c.LotNumber).toLowerCase().includes(search);
+        const matchTest = testFilter ? c.TestType === testFilter : true;
+
+        const expDate = new Date(c.ExpiryDate);
+        const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+        let matchExp = true;
+        if (expFilter === 'normal') matchExp = diffDays > 30;
+        if (expFilter === 'expiring') matchExp = diffDays > 0 && diffDays <= 30;
+        if (expFilter === 'expired') matchExp = diffDays <= 0;
+
+        return matchSearch && matchTest && matchExp;
+      });
+
+      const container = document.getElementById('controls-cards-container');
+      container.innerHTML = '';
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="col-span-3 p-8 text-center text-slate-400">ไม่พบสารควบคุม IQC ตามเงื่อนไขค้นหา</div>`;
+        return;
+      }
+
+      filtered.forEach(c => {
+        let levelDetails = '';
+        const count = parseInt(c.LevelsCount) || 1;
+
+        for (let i = 1; i <= count; i++) {
+          levelDetails += `
+            <div class="p-2.5 rounded-xl bg-white/70 border border-white text-xs sm:text-sm">
+              <span class="font-bold text-purple-800">Level ${i}:</span> Mean = <strong>${c[`L${i}_Mean`] || '-'}</strong>, SD = <strong>${c[`L${i}_SD`] || '-'}</strong>
+            </div>
+          `;
+        }
+
+        container.innerHTML += `
+          <div class="glass-panel p-5 border-sky-200/70 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start mb-2">
+                <div>
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 border border-sky-200">${c.TestType}</span>
+                  <h3 class="text-base font-bold text-slate-900 mt-1.5 font-['Prompt']">${c.ControlName}</h3>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  <span class="px-2.5 py-1 rounded-xl bg-purple-100 text-purple-900 font-mono text-xs font-bold">Lot: ${c.LotNumber}</span>
+                  <div class="flex gap-1 mt-1">
+                    <button onclick="openEditIQCControlModal('${c.ControlID}')" class="px-2 py-0.5 rounded-lg bg-sky-100 hover:bg-sky-200 text-sky-800 font-medium text-[11px] border border-sky-200">
+                      <i class="fa-solid fa-pen-to-square mr-1"></i>แก้ไข
+                    </button>
+                    <button onclick="confirmDeleteIQCControl('${c.ControlID}')" class="px-2 py-0.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-medium text-[11px] border border-rose-200">
+                      <i class="fa-solid fa-trash-can mr-1"></i>ลบ
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 text-xs text-slate-600 mb-3">
+                <span>จำนวน: <strong>${c.LevelsCount} Levels</strong></span>
+                <span>•</span>
+                <span>เกณฑ์มาตรฐาน: <strong>Mean & SD</strong></span>
+              </div>
+
+              <div class="space-y-1.5 mb-3">
+                ${levelDetails}
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-white/60 flex justify-between text-xs text-slate-600 font-mono">
+              <span>เริ่ม: ${c.StartDate}</span>
+              <span>หมดอายุ: ${c.ExpiryDate}</span>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function toggleControlLevels() {
+      const count = parseInt(document.getElementById('ctl-levels')?.value) || 2;
+      const container = document.getElementById('level-inputs-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      for (let i = 1; i <= count; i++) {
+        container.innerHTML += `
+          <div class="p-3 rounded-2xl bg-white/70 border border-white space-y-2">
+            <span class="font-bold text-purple-900 text-xs sm:text-sm font-['Prompt']">กำหนดเกณฑ์ Level ${i}:</span>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-700 mb-1">ค่าเฉลี่ย (Target Mean):</label>
+                <input type="number" step="any" id="ctl-l${i}-mean" required placeholder="ค่า Mean L${i} (เช่น 55)" class="glass-input p-2.5 rounded-xl text-xs sm:text-sm w-full font-semibold">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-700 mb-1">ส่วนเบี่ยงเบนมาตรฐาน (SD):</label>
+                <input type="number" step="any" id="ctl-l${i}-sd" required placeholder="ค่า SD L${i} (เช่น 3.5)" class="glass-input p-2.5 rounded-xl text-xs sm:text-sm w-full font-semibold">
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function onIQCCascadeChange() {
+      const selectedDept = document.getElementById('iqc-dept')?.value || '';
+      const selectedTest = document.getElementById('iqc-test-type')?.value || '';
+
+      let matchingDevs = appState.devices;
+      if (selectedDept) matchingDevs = matchingDevs.filter(d => d.Department === selectedDept);
+      if (selectedTest) matchingDevs = matchingDevs.filter(d => d.TestType === selectedTest);
+
+      const devOpts = matchingDevs.map(d => ({
+        val: d.DeviceID,
+        text: `${d.DeviceID} - ${d.DeviceName}`
+      }));
+      fillSelectCustom('iqc-device-id', devOpts.length > 0 ? devOpts : [{ val: '', text: 'ไม่พบเครื่องตรวจในแผนก/รายการนี้' }]);
+
+      let matchingReag = appState.reagents;
+      if (selectedTest) matchingReag = matchingReag.filter(r => r.TestType === selectedTest);
+
+      const reagOpts = matchingReag.map(r => ({
+        val: String(r.LotNumber).trim(),
+        text: String(r.LotNumber).trim()
+      }));
+      fillSelectCustom('iqc-reagent-lot', reagOpts.length > 0 ? reagOpts : [{ val: '', text: 'ไม่พบ Lot น้ำยา' }]);
+
+      let matchingCtrl = appState.controls;
+      if (selectedTest) matchingCtrl = matchingCtrl.filter(c => c.TestType === selectedTest);
+
+      const ctrlOpts = matchingCtrl.map(c => ({
+        val: String(c.LotNumber).trim(),
+        text: String(c.LotNumber).trim()
+      }));
+      fillSelectCustom('iqc-control-lot', ctrlOpts.length > 0 ? ctrlOpts : [{ val: '', text: 'ไม่พบ Lot IQC' }]);
+
+      onIQCControlChange();
+    }
+
+    function onIQCControlChange() {
+      const lotSelect = document.getElementById('iqc-control-lot');
+      const lot = (lotSelect?.value || '').toString().trim();
+      const container = document.getElementById('iqc-level-inputs');
+      if (!container) return;
+
+      if (!lot) {
+        container.innerHTML = `
+          <div class="p-4 text-center text-slate-500 text-xs">
+            <i class="fa-solid fa-circle-info text-purple-500 mr-1.5"></i>
+            กรุณาเลือก Lot IQC เพื่อกรอกผลการทดสอบ
+          </div>
+        `;
+        return;
+      }
+
+      let ctrl = appState.controls.find(c => String(c.LotNumber).trim() === lot);
+      if (!ctrl) {
+        ctrl = appState.controls.find(c => String(c.LotNumber).trim().toLowerCase() === lot.toLowerCase());
+      }
+      if (!ctrl && appState.controls.length > 0) {
+        const testType = document.getElementById('iqc-test-type')?.value || '';
+        ctrl = appState.controls.find(c => c.TestType === testType) || appState.controls[0];
+      }
+
+      if (!ctrl) {
+        container.innerHTML = `
+          <div class="p-4 text-center text-slate-500 text-xs">
+            <i class="fa-solid fa-circle-info text-purple-500 mr-1.5"></i>
+            ไม่พบเกณฑ์สารควบคุม IQC สำหรับ Lot นี้
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = '<h4 class="font-bold text-purple-950 text-xs sm:text-sm font-[\'Prompt\'] mb-2">ผลการควบคุมคุณภาพ (กรอกค่าตัวเลขผล IQC ที่ตรวจได้):</h4>';
+
+      const count = parseInt(ctrl.LevelsCount) || 2;
+      for (let i = 1; i <= count; i++) {
+        const meanVal = ctrl[`L${i}_Mean`] !== undefined && ctrl[`L${i}_Mean`] !== '' ? ctrl[`L${i}_Mean`] : '-';
+        const sdVal = ctrl[`L${i}_SD`] !== undefined && ctrl[`L${i}_SD`] !== '' ? ctrl[`L${i}_SD`] : '-';
+        const label = `Level ${i} (Target Mean: ${meanVal} ± SD ${sdVal})`;
+
+        container.innerHTML += `
+          <div class="mb-2">
+            <label class="block font-semibold text-slate-800 mb-1 text-xs sm:text-sm">${label}:</label>
+            <input type="number" step="any" id="iqc-res-l${i}" required placeholder="ใส่ค่าตัวเลขผลการตรวจ Level ${i} (เช่น ${ctrl[`L${i}_Mean`] || '55'})" class="glass-input p-3 rounded-xl w-full text-sm font-semibold text-purple-950">
+          </div>
+        `;
+      }
+    }
+
+    function onLJTestChange() {
+      const testFilter = document.getElementById('lj-test-select')?.value || '';
+      
+      let matchingDevs = appState.devices;
+      if (testFilter) matchingDevs = matchingDevs.filter(d => d.TestType === testFilter);
+
+      const devOpts = [{ val: 'ALL', text: '-- ทุกเครื่องตรวจ (All Devices) --' }].concat(
+        matchingDevs.map(d => ({ val: d.DeviceID, text: `${d.DeviceID} - ${d.DeviceName}` }))
+      );
+      fillSelectCustom('lj-device-select', devOpts);
+
+      onLJDeviceChange();
+    }
+
+    function onLJDeviceChange() {
+      const testFilter = document.getElementById('lj-test-select')?.value || '';
+      const devId = document.getElementById('lj-device-select')?.value || 'ALL';
+      const dev = appState.devices.find(d => d.DeviceID === devId);
+
+      // Reset user line override on device selection change to follow default rule (All = no lines, Single = lines)
+      ljLinesUserOverride = null;
+
+      let matchingControls = appState.controls;
+      if (dev && dev.TestType) {
+        matchingControls = appState.controls.filter(c => c.TestType === dev.TestType);
+      } else if (testFilter) {
+        matchingControls = appState.controls.filter(c => c.TestType === testFilter);
+      }
+
+      const ctrlOpts = matchingControls.map(c => ({
+        val: String(c.LotNumber).trim(),
+        text: `${c.LotNumber} (${c.ControlName})`
+      }));
+
+      fillSelectCustom('lj-control-select', ctrlOpts.length > 0 ? ctrlOpts : [{ val: '', text: 'ไม่พบ Lot IQC' }]);
+
+      renderLJChart();
+    }
+
+    function toggleLJChartLines() {
+      const selectedDevice = document.getElementById('lj-device-select')?.value || 'ALL';
+      const isAllDevices = (selectedDevice === 'ALL');
+      const currentShowLines = (ljLinesUserOverride !== null) ? ljLinesUserOverride : (!isAllDevices);
+
+      ljLinesUserOverride = !currentShowLines;
+      renderLJChart();
+    }
+
+    function toggleLJChartVisibility() {
+      const chartWrapper = document.getElementById('lj-chart-wrapper');
+      const icon = document.getElementById('icon-toggle-chart');
+      const text = document.getElementById('text-toggle-chart');
+      if (!chartWrapper) return;
+
+      if (chartWrapper.classList.contains('hidden')) {
+        chartWrapper.classList.remove('hidden');
+        icon.className = 'fa-solid fa-chevron-up';
+        text.innerText = 'ซ่อนกราฟ L-J';
+      } else {
+        chartWrapper.classList.add('hidden');
+        icon.className = 'fa-solid fa-chevron-down';
+        text.innerText = 'แสดงกราฟ L-J';
+      }
+    }
+
+    function evaluateWestgardRules(deviceId, controlLot, newRunData) {
+      const ctrl = appState.controls.find(c => String(c.LotNumber).trim() === String(controlLot).trim());
+      if (!ctrl) return { status: 'In Control', violated: 'None' };
+
+      const previousRuns = appState.results.filter(r => r.DeviceID === deviceId && String(r.ControlLot).trim() === String(controlLot).trim());
+      const levelsCount = parseInt(ctrl.LevelsCount) || 1;
+      const violations = [];
+
+      const currentZScores = [];
+      for (let l = 1; l <= levelsCount; l++) {
+        const val = parseFloat(newRunData[`L${l}_Result`]);
+        let mean = parseFloat(ctrl[`L${l}_Mean`]);
+        let sd = parseFloat(ctrl[`L${l}_SD`]);
+
+        if (!isNaN(val) && mean && sd && sd > 0) {
+          const z = (val - mean) / sd;
+          currentZScores.push(z);
+        }
+      }
+
+      if (currentZScores.some(z => Math.abs(z) > 3)) {
+        violations.push('1-3s');
+      }
+
+      if (currentZScores.some(z => Math.abs(z) > 2)) {
+        if (currentZScores.length >= 2) {
+          if ((currentZScores[0] > 2 && currentZScores[1] > 2) || (currentZScores[0] < -2 && currentZScores[1] < -2)) {
+            violations.push('2-2s (Across Levels)');
+          }
+        }
+        if (previousRuns.length > 0) {
+          const lastRun = previousRuns[previousRuns.length - 1];
+          for (let l = 1; l <= levelsCount; l++) {
+            const lastVal = parseFloat(lastRun[`L${l}_Result`]);
+            let mean = parseFloat(ctrl[`L${l}_Mean`]);
+            let sd = parseFloat(ctrl[`L${l}_SD`]);
+            if (!isNaN(lastVal) && mean && sd && sd > 0) {
+              const lastZ = (lastVal - mean) / sd;
+              const currentZ = currentZScores[l - 1];
+              if ((lastZ > 2 && currentZ > 2) || (lastZ < -2 && currentZ < -2)) {
+                violations.push(`2-2s (Level ${l})`);
+              }
+            }
+          }
+        }
+      }
+
+      if (currentZScores.length >= 2) {
+        const diff = Math.abs(currentZScores[0] - currentZScores[1]);
+        if (diff >= 4) {
+          violations.push('R-4s');
+        }
+      }
+
+      if (violations.length === 0 && currentZScores.some(z => Math.abs(z) > 2)) {
+        violations.push('1-2s (Warning)');
+        return { status: 'Warning', violated: violations.join(', ') };
+      }
+
+      if (violations.length > 0) {
+        return { status: 'Out of Control', violated: violations.join(', ') };
+      }
+
+      return { status: 'In Control', violated: 'None' };
+    }
+
+    /**
+     * HIGH-PERFORMANCE STATIC LEVEY-JENNINGS CHART RENDERER (WITH CONNECTING LINE TOGGLE)
+     */
+    function renderLJChart() {
+      const testFilter = document.getElementById('lj-test-select')?.value || '';
+      const selectedDevice = document.getElementById('lj-device-select')?.value || 'ALL';
+      const selectedLot = (document.getElementById('lj-control-select')?.value || '').toString().trim();
+      const selectedLevel = document.getElementById('lj-level-select')?.value || 'ALL';
+
+      const isAllDevices = (selectedDevice === 'ALL');
+      // Default rule: If "All Devices" is selected, DEFAULT HIDE CONNECTING LINES between points!
+      const showLines = (ljLinesUserOverride !== null) ? ljLinesUserOverride : (!isAllDevices);
+
+      // Update Line Toggle Button UI
+      const btnToggleLines = document.getElementById('btn-toggle-lines');
+      const iconToggleLines = document.getElementById('icon-toggle-lines');
+      const textToggleLines = document.getElementById('text-toggle-lines');
+
+      if (btnToggleLines) {
+        if (showLines) {
+          iconToggleLines.className = 'fa-solid fa-eye-slash text-purple-600';
+          textToggleLines.innerText = 'ซ่อนเส้นเชื่อมจุด';
+          btnToggleLines.classList.remove('bg-purple-100', 'text-purple-900');
+        } else {
+          iconToggleLines.className = 'fa-solid fa-chart-line text-slate-500';
+          textToggleLines.innerText = 'แสดงเส้นเชื่อมจุด';
+          btnToggleLines.classList.add('bg-purple-100', 'text-purple-900');
+        }
+      }
+
+      const canvas = document.getElementById('ljChartCanvas');
+      if (!canvas) return;
+
+      if (ljChartInstance) {
+        ljChartInstance.destroy();
+        ljChartInstance = null;
+      }
+
+      let filteredResults = appState.results.slice();
+
+      if (selectedDevice !== 'ALL') {
+        filteredResults = filteredResults.filter(r => r.DeviceID === selectedDevice);
+      } else if (testFilter) {
+        const testDevIds = appState.devices.filter(d => d.TestType === testFilter).map(d => d.DeviceID);
+        if (testDevIds.length > 0) {
+          filteredResults = filteredResults.filter(r => testDevIds.includes(r.DeviceID));
+        }
+      }
+
+      if (selectedLot) {
+        filteredResults = filteredResults.filter(r => String(r.ControlLot).trim() === selectedLot);
+      }
+
+      const ctrl = appState.controls.find(c => String(c.LotNumber).trim() === selectedLot);
+
+      const titleEl = document.getElementById('chart-title');
+      const subtitleEl = document.getElementById('chart-subtitle');
+      const statusBadge = document.getElementById('chart-status-badge');
+
+      if (filteredResults.length === 0) {
+        if (titleEl) titleEl.innerText = 'ไม่พบข้อมูลกราฟ Levey-Jennings';
+        if (subtitleEl) subtitleEl.innerText = 'กรุณาเลือกเครื่องตรวจวิเคราะห์ หรือ Lot IQC ที่มีผลการทดสอบในระบบ';
+        if (statusBadge) {
+          statusBadge.innerText = 'No Data';
+          statusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-300';
+        }
+        return;
+      }
+
+      const hasOut = filteredResults.some(r => r.Status === 'Out of Control');
+      const hasWarn = filteredResults.some(r => r.Status === 'Warning');
+      if (statusBadge) {
+        if (hasOut) {
+          statusBadge.innerText = 'Out of Control!';
+          statusBadge.className = 'px-3.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300 shadow-sm font-[\'Prompt\']';
+        } else if (hasWarn) {
+          statusBadge.innerText = 'Warning';
+          statusBadge.className = 'px-3.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 shadow-sm font-[\'Prompt\']';
+        } else {
+          statusBadge.innerText = 'In Control';
+          statusBadge.className = 'px-3.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm font-[\'Prompt\']';
+        }
+      }
+
+      const deviceText = selectedDevice === 'ALL' ? 'ทุกเครื่องตรวจ' : selectedDevice;
+      const levelText = selectedLevel === 'ALL' ? 'ทุก Level (L1 - L3)' : selectedLevel;
+      const lotText = ctrl ? `${ctrl.ControlName} (Lot ${ctrl.LotNumber})` : (selectedLot || 'ทุก Lot');
+      const lineStatusText = showLines ? '' : ' • (ซ่อนเส้นเชื่อมจุด)';
+
+      if (titleEl) titleEl.innerText = `Levey-Jennings Chart: ${deviceText} • ${lotText} [${levelText}]${lineStatusText}`;
+      if (subtitleEl) subtitleEl.innerText = `กราฟวิเคราะห์คุณภาพตามกฎ Westgard Multi-rules แสดงเส้นกำกับ ±1SD, ±2SD, ±3SD (Z-score Scale)`;
+
+      const uniqueDates = Array.from(new Set(filteredResults.map(r => r.TestDate))).sort((a, b) => new Date(a) - new Date(b));
+      const labels = uniqueDates.length > 0 ? uniqueDates : ['ไม่มีข้อมูล'];
+
+      // Distinct Point & Line Colors: L1 = Blue (#0284c7), L2 = Purple (#9333ea), L3 = Amber (#d97706)
+      const colorMap = {
+        'L1': { border: '#0284c7', bg: 'rgba(2, 132, 199, 0.12)', point: '#0284c7', label: 'Level 1' },
+        'L2': { border: '#9333ea', bg: 'rgba(147, 51, 234, 0.12)', point: '#9333ea', label: 'Level 2' },
+        'L3': { border: '#d97706', bg: 'rgba(217, 119, 6, 0.12)', point: '#d97706', label: 'Level 3' }
+      };
+
+      const datasets = [];
+
+      // Reference Lines (Thinner Target Mean Line = borderWidth 1.2)
+      datasets.push({ label: '+3SD Limit', data: Array(labels.length).fill(3), borderColor: 'rgba(239, 68, 68, 0.8)', borderDash: [5, 5], borderWidth: 1.5, pointRadius: 0 });
+      datasets.push({ label: '+2SD Warning', data: Array(labels.length).fill(2), borderColor: 'rgba(245, 158, 11, 0.8)', borderDash: [5, 5], borderWidth: 1.5, pointRadius: 0 });
+      datasets.push({ label: '+1SD', data: Array(labels.length).fill(1), borderColor: 'rgba(16, 185, 129, 0.5)', borderDash: [3, 3], borderWidth: 1, pointRadius: 0 });
+      datasets.push({ label: 'Target Mean (0)', data: Array(labels.length).fill(0), borderColor: 'rgba(16, 185, 129, 0.95)', borderWidth: 1.2, pointRadius: 0 });
+      datasets.push({ label: '-1SD', data: Array(labels.length).fill(-1), borderColor: 'rgba(16, 185, 129, 0.5)', borderDash: [3, 3], borderWidth: 1, pointRadius: 0 });
+      datasets.push({ label: '-2SD Warning', data: Array(labels.length).fill(-2), borderColor: 'rgba(245, 158, 11, 0.8)', borderDash: [5, 5], borderWidth: 1.5, pointRadius: 0 });
+      datasets.push({ label: '-3SD Limit', data: Array(labels.length).fill(-3), borderColor: 'rgba(239, 68, 68, 0.8)', borderDash: [5, 5], borderWidth: 1.5, pointRadius: 0 });
+
+      const activeDevices = selectedDevice === 'ALL'
+        ? Array.from(new Set(filteredResults.map(r => r.DeviceID)))
+        : [selectedDevice];
+
+      const levelsToPlot = selectedLevel === 'ALL' ? ['L1', 'L2', 'L3'] : [selectedLevel];
+
+      activeDevices.forEach(devId => {
+        levelsToPlot.forEach(lvl => {
+          const zScores = [];
+          const deviceDetails = [];
+
+          labels.forEach(dateStr => {
+            const r = filteredResults.find(res => res.TestDate === dateStr && res.DeviceID === devId);
+            if (r) {
+              const rawVal = parseFloat(r[`${lvl}_Result`]);
+              const currentCtrl = appState.controls.find(c => String(c.LotNumber).trim() === String(r.ControlLot).trim()) || ctrl;
+
+              if (!isNaN(rawVal) && currentCtrl) {
+                const mean = parseFloat(currentCtrl[`${lvl}_Mean`]);
+                const sd = parseFloat(currentCtrl[`${lvl}_SD`]);
+
+                if (mean && sd && sd > 0) {
+                  const z = (rawVal - mean) / sd;
+                  zScores.push(z.toFixed(2));
+
+                  deviceDetails.push({
+                    deviceId: r.DeviceID,
+                    rawVal: rawVal,
+                    zScore: z.toFixed(2),
+                    testDate: r.TestDate,
+                    timestamp: r.Timestamp || '',
+                    status: r.Status,
+                    levelLabel: colorMap[lvl].label
+                  });
+                  return;
+                }
+              }
+            }
+
+            zScores.push(null);
+            deviceDetails.push(null);
+          });
+
+          if (zScores.some(z => z !== null)) {
+            const devLabel = activeDevices.length > 1 ? `${devId} ` : '';
+            datasets.push({
+              label: `${devLabel}${colorMap[lvl].label}`,
+              data: zScores,
+              borderColor: colorMap[lvl].border,
+              backgroundColor: colorMap[lvl].bg,
+              showLine: showLines,
+              borderWidth: showLines ? 2.5 : 0,
+              pointRadius: 6,
+              pointHoverRadius: 9,
+              pointBackgroundColor: colorMap[lvl].point,
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 2,
+              tension: 0.15,
+              deviceDetails: deviceDetails
+            });
+          }
+        });
+      });
+
+      // Background Soft Zone Shading Plugin (Static, No Lag)
+      const westgardBandsPlugin = {
+        id: 'westgardBands',
+        beforeDraw(chart) {
+          const { ctx, chartArea: { top, bottom, left, right }, scales: { y } } = chart;
+          if (!y) return;
+          ctx.save();
+
+          const yP2 = y.getPixelForValue(2);
+          const yP1 = y.getPixelForValue(1);
+          const yM1 = y.getPixelForValue(-1);
+          const yM2 = y.getPixelForValue(-2);
+
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.05)';
+          ctx.fillRect(left, yP1, right - left, yM1 - yP1);
+
+          ctx.fillStyle = 'rgba(245, 158, 11, 0.05)';
+          ctx.fillRect(left, yP2, right - left, yP1 - yP2);
+          ctx.fillRect(left, yM1, right - left, yM2 - yM1);
+
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.05)';
+          ctx.fillRect(left, top, right - left, yP2 - top);
+          ctx.fillRect(left, yM2, right - left, bottom - yM2);
+
+          ctx.restore();
+        }
+      };
+
+      const ctx = canvas.getContext('2d');
+      ljChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: datasets
+        },
+        plugins: [westgardBandsPlugin],
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'nearest',
+            intersect: true
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 14,
+                font: { family: 'Sarabun', size: 12, weight: '600' },
+                padding: 14
+              }
+            },
+            tooltip: {
+              filter: function(tooltipItem) {
+                return tooltipItem.dataset.deviceDetails !== undefined && tooltipItem.raw !== null;
+              },
+              backgroundColor: 'rgba(15, 23, 42, 0.94)',
+              titleFont: { family: 'Prompt', size: 13, weight: 'bold' },
+              bodyFont: { family: 'Sarabun', size: 12 },
+              padding: 12,
+              cornerRadius: 12,
+              displayColors: true,
+              callbacks: {
+                title: function(tooltipItems) {
+                  if (!tooltipItems.length) return '';
+                  const item = tooltipItems[0];
+                  const info = item.dataset.deviceDetails ? item.dataset.deviceDetails[item.dataIndex] : null;
+                  if (info) {
+                    const timeStr = info.timestamp ? ` (บันทึกเวลา: ${info.timestamp})` : '';
+                    return `📅 วันที่ทดสอบ: ${info.testDate}${timeStr}`;
+                  }
+                  return `วันที่: ${item.label}`;
+                },
+                label: function(context) {
+                  const ds = context.dataset;
+                  const info = ds.deviceDetails ? ds.deviceDetails[context.dataIndex] : null;
+                  if (info) {
+                    return [
+                      `💻 รหัสเครื่องตรวจ: ${info.deviceId}`,
+                      `🧪 ${info.levelLabel}`,
+                      `📊 ผลการตรวจ: ${info.rawVal} (Z-score: ${info.zScore} SD)`,
+                      `🛡️ ผลการประเมิน: ${info.status}`
+                    ];
+                  }
+                  return `${ds.label}: ${context.parsed.y} SD`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              min: -4,
+              max: 4,
+              ticks: {
+                stepSize: 1,
+                callback: function(value) {
+                  if (value === 0) return 'Target Mean (0)';
+                  return (value > 0 ? `+${value}` : value) + ' SD';
+                },
+                font: { family: 'Prompt', size: 11, weight: '600' }
+              },
+              grid: { color: 'rgba(203, 213, 225, 0.4)' }
+            },
+            x: {
+              ticks: { font: { family: 'Sarabun', size: 11, weight: '600' } },
+              grid: { color: 'rgba(226, 232, 240, 0.6)' }
+            }
+          }
+        }
+      });
+    }
+
+    /**
+     * RENDER IQC HISTORY TABLE WITH SPLIT MONTH & YEAR FILTERING (SHOWS ALL MATCHING RECORDS)
+     */
+    function renderIQCHistory() {
+      const selMonth = document.getElementById('iqc-hist-month-select')?.value || 'ALL';
+      const selYear = document.getElementById('iqc-hist-year-select')?.value || 'ALL';
+
+      let filteredRes = appState.results.slice();
+      if (selMonth !== 'ALL') {
+        filteredRes = filteredRes.filter(r => r.TestDate && r.TestDate.length >= 7 && r.TestDate.slice(5, 7) === selMonth);
+      }
+      if (selYear !== 'ALL') {
+        filteredRes = filteredRes.filter(r => r.TestDate && r.TestDate.length >= 4 && r.TestDate.slice(0, 4) === selYear);
+      }
+
+      const tbody = document.getElementById('iqc-history-table-body');
+      tbody.innerHTML = '';
+
+      if (filteredRes.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="12" class="p-6 text-center text-slate-400">ไม่พบข้อมูลการประเมิน IQC ในช่วงเวลาที่เลือก</td></tr>`;
+        return;
+      }
+
+      filteredRes.reverse().forEach(r => {
+        let badgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+        if (r.Status === 'Warning') badgeClass = 'bg-amber-100 text-amber-800 border-amber-300';
+        if (r.Status === 'Out of Control') badgeClass = 'bg-rose-100 text-rose-800 border-rose-300';
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-white/50 transition-colors">
+            <td class="p-3 font-mono">${r.TestDate}</td>
+            <td class="p-3 font-bold text-purple-950 font-mono">${r.DeviceID}</td>
+            <td class="p-3 font-mono">${r.ReagentLot}</td>
+            <td class="p-3 font-mono text-purple-800 font-semibold">${r.ControlLot}</td>
+            <td class="p-3 font-bold text-slate-800">${r.L1_Result || '-'}</td>
+            <td class="p-3 font-bold text-slate-800">${r.L2_Result || '-'}</td>
+            <td class="p-3 font-bold text-slate-800">${r.L3_Result || '-'}</td>
+            <td class="p-3">${r.TesterName}</td>
+            <td class="p-3">${r.SupervisorName}</td>
+            <td class="p-3">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold border ${badgeClass}">
+                ${r.Status}
+              </span>
+            </td>
+            <td class="p-3 font-semibold text-rose-600">${r.ViolatedRules || 'None'}</td>
+            <td class="p-3 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <button onclick="openEditIQCResultModal('${r.ResultID}')" class="px-2 py-1 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-800 font-medium text-xs border border-purple-200" title="แก้ไขข้อมูล">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button onclick="confirmDeleteIQCResult('${r.ResultID}')" class="px-2 py-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-medium text-xs border border-rose-200" title="ลบรายการ">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function openEditIQCResultModal(resultId) {
+      const res = appState.results.find(r => r.ResultID === resultId);
+      if (!res) return;
+
+      document.getElementById('editing-result-id').value = res.ResultID;
+      document.getElementById('iqc-test-date').value = res.TestDate;
+      
+      const dev = appState.devices.find(d => d.DeviceID === res.DeviceID);
+      if (dev) {
+        document.getElementById('iqc-dept').value = dev.Department;
+        document.getElementById('iqc-test-type').value = dev.TestType;
+      }
+
+      onIQCCascadeChange();
+
+      document.getElementById('iqc-device-id').value = res.DeviceID;
+      document.getElementById('iqc-reagent-lot').value = res.ReagentLot;
+      document.getElementById('iqc-control-lot').value = res.ControlLot;
+
+      onIQCControlChange();
+
+      if (document.getElementById('iqc-res-l1')) document.getElementById('iqc-res-l1').value = res.L1_Result || res.l1Result || '';
+      if (document.getElementById('iqc-res-l2')) document.getElementById('iqc-res-l2').value = res.L2_Result || res.l2Result || '';
+      if (document.getElementById('iqc-res-l3')) document.getElementById('iqc-res-l3').value = res.L3_Result || res.l3Result || '';
+
+      document.getElementById('iqc-tester').value = res.TesterName;
+      document.getElementById('iqc-supervisor').value = res.SupervisorName;
+      document.getElementById('iqc-notes').value = res.Notes || res.notes || '';
+
+      document.getElementById('iqc-modal-title').innerText = `แก้ไขรายงานผล IQC (${res.ResultID})`;
+      document.getElementById('iqc-btn-submit').innerText = 'บันทึกการแก้ไขผล IQC';
+
+      openModal('iqcReportModal');
+    }
+
+    function confirmDeleteIQCResult(resultId) {
+      Swal.fire({
+        title: 'ยืนยันการลบผล IQC?',
+        text: `คุณต้องการลบผลการตรวจรหัส "${resultId}" ใช่หรือไม่?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ลบข้อมูล',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#ef4444'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          showLoading(true);
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler(() => {
+                fetchData();
+                Swal.fire('ลบสำเร็จ!', `ลบผลการตรวจ ${resultId} แล้ว`, 'success');
+              })
+              .deleteIQCResult(resultId);
+          } else {
+            appState.results = appState.results.filter(r => r.ResultID !== resultId);
+            showLoading(false);
+            renderAllViews();
+            Swal.fire('ลบสำเร็จ!', `ลบผลการตรวจ ${resultId} แล้ว (Local)`, 'success');
+          }
+        }
+      });
+    }
+
+    /**
+     * RENDER MONTHLY EXECUTIVE SUMMARY REPORT DOCUMENT
+     */
+    function openMonthlyReportModal() {
+      populateMonthAndYearFilters();
+      openModal('monthlyReportModal');
+      renderMonthlyReportDoc();
+    }
+
+    function renderMonthlyReportDoc() {
+      const selectedMonth = document.getElementById('rpt-month-select')?.value || new Date().toISOString().slice(0, 7);
+      const [yyyy, mm] = selectedMonth.split('-');
+      const monthNames = {
+        '01': 'มกราคม', '02': 'กุมภาพันธ์', '03': 'มีนาคม', '04': 'เมษายน',
+        '05': 'พฤษภาคม', '06': 'มิถุนายน', '07': 'กรกฎาคม', '08': 'สิงหาคม',
+        '09': 'กันยายน', '10': 'ตุลาคม', '11': 'พฤศจิกายน', '12': 'ธันวาคม'
+      };
+      const thYear = parseInt(yyyy) + 543;
+      const monthTitle = `${monthNames[mm] || mm} พ.ศ. ${thYear}`;
+
+      document.getElementById('rpt-doc-title').innerText = `รายงานสรุปผลการควบคุมคุณภาพภายใน (IQC) ประจำเดือน ${monthTitle}`;
+      document.getElementById('rpt-doc-date').innerText = `วันที่ออกรายงาน: ${new Date().toLocaleDateString('th-TH')}`;
+
+      // Filter Results for Selected Month
+      const monthResults = appState.results.filter(r => r.TestDate && r.TestDate.startsWith(selectedMonth));
+
+      const totalCount = monthResults.length;
+      const passCount = monthResults.filter(r => r.Status === 'In Control').length;
+      const failCount = totalCount - passCount;
+      const passRate = totalCount > 0 ? Math.round((passCount / totalCount) * 100) : 100;
+
+      document.getElementById('rpt-stat-total').innerText = totalCount;
+      document.getElementById('rpt-stat-pass').innerText = passCount;
+      document.getElementById('rpt-stat-out').innerText = failCount;
+      document.getElementById('rpt-stat-rate').innerText = `${passRate}%`;
+
+      // Render Table 1: Device Performance
+      const devTbody = document.getElementById('rpt-device-table-body');
+      devTbody.innerHTML = '';
+
+      if (appState.devices.length === 0) {
+        devTbody.innerHTML = `<tr><td colspan="7" class="p-3 text-center text-slate-400">ไม่พบทะเบียนเครื่องตรวจ</td></tr>`;
+      } else {
+        appState.devices.forEach(d => {
+          const dRes = monthResults.filter(r => r.DeviceID === d.DeviceID);
+          const dTotal = dRes.length;
+          const dPass = dRes.filter(r => r.Status === 'In Control').length;
+          const dFail = dTotal - dPass;
+          const dRate = dTotal > 0 ? Math.round((dPass / dTotal) * 100) : 100;
+
+          devTbody.innerHTML += `
+            <tr class="hover:bg-slate-50">
+              <td class="p-2 font-mono font-bold text-purple-900 border-r border-slate-200">${d.DeviceID}</td>
+              <td class="p-2 border-r border-slate-200 font-medium">${d.DeviceName}</td>
+              <td class="p-2 border-r border-slate-200">${d.Department}</td>
+              <td class="p-2 border-r border-slate-200 text-center font-bold">${dTotal}</td>
+              <td class="p-2 border-r border-slate-200 text-center text-emerald-700 font-bold">${dPass}</td>
+              <td class="p-2 border-r border-slate-200 text-center text-rose-700 font-bold">${dFail}</td>
+              <td class="p-2 text-center font-bold ${dRate < 100 ? 'text-amber-700' : 'text-emerald-700'}">${dRate}%</td>
+            </tr>
+          `;
+        });
+      }
+
+      // Render Table 2: Violations Log
+      const vioTbody = document.getElementById('rpt-violation-table-body');
+      vioTbody.innerHTML = '';
+
+      const vioResults = monthResults.filter(r => r.Status !== 'In Control');
+      if (vioResults.length === 0) {
+        vioTbody.innerHTML = `<tr><td colspan="7" class="p-3 text-center text-slate-500">ไม่พบการละเมิดกฎ IQC ในเดือนนี้ (ผลการตรวจผ่านเกณฑ์ 100%)</td></tr>`;
+      } else {
+        vioResults.forEach(r => {
+          vioTbody.innerHTML += `
+            <tr class="hover:bg-rose-50/50">
+              <td class="p-2 font-mono border-r border-slate-200">${r.TestDate}</td>
+              <td class="p-2 font-mono font-bold text-purple-900 border-r border-slate-200">${r.DeviceID}</td>
+              <td class="p-2 font-mono border-r border-slate-200">${r.ControlLot}</td>
+              <td class="p-2 font-bold text-rose-700 border-r border-slate-200">${r.ViolatedRules || 'None'}</td>
+              <td class="p-2 border-r border-slate-200 font-bold text-amber-800">${r.Status}</td>
+              <td class="p-2 border-r border-slate-200">${r.TesterName}</td>
+              <td class="p-2 text-slate-700">${r.Notes || '-'}</td>
+            </tr>
+          `;
+        });
+      }
+    }
+
+    /**
+     * HIGH-FIDELITY PDF & JPEG EXPORT CONTROLLERS
+     */
+    function exportReportPDF() {
+      const element = document.getElementById('monthly-report-printable');
+      const monthVal = document.getElementById('rpt-month-select')?.value || 'Report';
+      
+      const opt = {
+        margin:       [8, 8, 8, 8],
+        filename:     `POCT_IQC_Monthly_Report_${monthVal}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'info',
+        title: 'กำลังสร้างไฟล์ PDF คมชัดสูง...',
+        showConfirmButton: false,
+        timer: 1500
+      });
+
+      html2pdf().set(opt).from(element).save();
+    }
+
+    function exportReportJPEG() {
+      const element = document.getElementById('monthly-report-printable');
+      const monthVal = document.getElementById('rpt-month-select')?.value || 'Report';
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'info',
+        title: 'กำลังส่งออกรูปภาพ JPEG คมชัดสูง...',
+        showConfirmButton: false,
+        timer: 1500
+      });
+
+      html2canvas(element, { scale: 2.5, useCORS: true }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `POCT_IQC_Monthly_Report_${monthVal}.jpg`;
+        link.href = canvas.toDataURL('image/jpeg', 0.95);
+        link.click();
+      });
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    function requestDevModeAccess() {
+      Swal.fire({
+        title: '🔒 ยืนยันสิทธิ์ Dev Mode',
+        text: 'กรุณากรอกรหัสผ่านเพื่อเข้าสู่การตั้งค่าระบบ',
+        input: 'password',
+        inputPlaceholder: 'ใส่รหัสผ่าน...',
+        showCancelButton: true,
+        confirmButtonText: 'ยืนยัน',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#a855f7'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          if (result.value === '03842510') {
+            openModal('settingsModal');
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'success',
+              title: 'ยืนยันสิทธิ์ Dev Mode สำเร็จ',
+              showConfirmButton: false,
+              timer: 2000
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'รหัสผ่านไม่ถูกต้อง!',
+              text: 'คุณไม่มีสิทธิ์เข้าถึงส่วนการตั้งค่าระบบ',
+              confirmButtonColor: '#ef4444'
+            });
+          }
+        }
+      });
+    }
+
+    function promptEditSpreadsheetId() {
+      closeModal('settingsModal');
+      Swal.fire({
+        title: 'แก้ไข Google Spreadsheet ID',
+        text: 'ระบุ Spreadsheet ID ใหม่ที่คุณต้องการเชื่อมต่อฐานข้อมูล',
+        input: 'text',
+        inputValue: appState.spreadsheetId || '',
+        showCancelButton: true,
+        confirmButtonText: 'บันทึก ID ใหม่',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#10b981'
+      }).then((result) => {
+        if (result.isConfirmed && result.value.trim() !== '') {
+          const newId = result.value.trim();
+          showLoading(true);
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler(res => {
+                fetchData();
+                Swal.fire('สำเร็จ!', `เปลี่ยน Spreadsheet ID เป็น ${newId} เรียบร้อยแล้ว`, 'success');
+              })
+              .setSpreadsheetId(newId);
+          } else {
+            appState.spreadsheetId = newId;
+            document.getElementById('current-sheet-id-display').innerText = `ID: ${newId}`;
+            showLoading(false);
+            Swal.fire('สำเร็จ!', `เปลี่ยน Spreadsheet ID เป็น ${newId} เรียบร้อยแล้ว (Local)`, 'success');
+          }
+        } else {
+          openModal('settingsModal');
+        }
+      });
+    }
+
+    function openAddDeviceModal() {
+      document.getElementById('deviceForm').reset();
+      document.getElementById('editing-device-id').value = '';
+      
+      document.getElementById('dev-test-type').selectedIndex = 0;
+      document.getElementById('dev-department').selectedIndex = 0;
+      document.getElementById('dev-contact').selectedIndex = 0;
+      document.getElementById('dev-status').selectedIndex = 0;
+
+      document.getElementById('dev-modal-title').innerText = 'ลงทะเบียนเครื่องตรวจ POCT ใหม่';
+      document.getElementById('dev-btn-submit').innerText = 'บันทึกข้อมูลเครื่อง';
+      openModal('addDeviceModal');
+    }
+
+    function openEditDeviceModal(deviceId) {
+      const dev = appState.devices.find(d => d.DeviceID === deviceId);
+      if (!dev) return;
+
+      document.getElementById('editing-device-id').value = dev.DeviceID;
+      document.getElementById('dev-test-type').value = dev.TestType;
+      document.getElementById('dev-name').value = dev.DeviceName;
+      document.getElementById('dev-model').value = dev.Model;
+      document.getElementById('dev-sn').value = dev.SerialNumber;
+      document.getElementById('dev-department').value = dev.Department;
+      document.getElementById('dev-contact').value = dev.Contact;
+      document.getElementById('dev-start-date').value = dev.StartDate;
+      document.getElementById('dev-status').value = dev.Status;
+
+      document.getElementById('dev-modal-title').innerText = `แก้ไขข้อมูลเครื่องตรวจ (${dev.DeviceID})`;
+      document.getElementById('dev-btn-submit').innerText = 'บันทึกการแก้ไข';
+      openModal('addDeviceModal');
+    }
+
+    function confirmDeleteDevice(deviceId) {
+      Swal.fire({
+        title: 'ยืนยันการลบเครื่องตรวจ?',
+        text: `คุณต้องการลบเครื่องตรวจรหัส "${deviceId}" ใช่หรือไม่?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ลบข้อมูล',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#ef4444'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          showLoading(true);
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler(() => {
+                fetchData();
+                Swal.fire('ลบสำเร็จ!', `ลบเครื่องตรวจ ${deviceId} แล้ว`, 'success');
+              })
+              .deleteDevice(deviceId);
+          } else {
+            appState.devices = appState.devices.filter(d => d.DeviceID !== deviceId);
+            showLoading(false);
+            renderAllViews();
+            Swal.fire('ลบสำเร็จ!', `ลบเครื่องตรวจ ${deviceId} แล้ว (Local)`, 'success');
+          }
+        }
+      });
+    }
+
+    function openAddReagentModal() {
+      document.getElementById('reagentForm').reset();
+      document.getElementById('editing-reagent-id').value = '';
+      document.getElementById('rea-test-type').selectedIndex = 0;
+      document.getElementById('rea-modal-title').innerText = 'ลงทะเบียนน้ำยาใหม่';
+      document.getElementById('rea-btn-submit').innerText = 'บันทึกข้อมูลน้ำยา';
+      openModal('addReagentModal');
+    }
+
+    function openEditReagentModal(reagentId) {
+      const rea = appState.reagents.find(r => r.ReagentID === reagentId);
+      if (!rea) return;
+
+      document.getElementById('editing-reagent-id').value = rea.ReagentID;
+      document.getElementById('rea-test-type').value = rea.TestType;
+      document.getElementById('rea-name').value = rea.ReagentName;
+      document.getElementById('rea-lot').value = rea.LotNumber;
+      document.getElementById('rea-exp').value = rea.ExpiryDate;
+
+      document.getElementById('rea-modal-title').innerText = `แก้ไขข้อมูลน้ำยา (${rea.ReagentID})`;
+      document.getElementById('rea-btn-submit').innerText = 'บันทึกการแก้ไข';
+      openModal('addReagentModal');
+    }
+
+    function confirmDeleteReagent(reagentId) {
+      Swal.fire({
+        title: 'ยืนยันการลบรายการน้ำยา?',
+        text: `คุณต้องการลบน้ำยารหัส "${reagentId}" ใช่หรือไม่?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ลบข้อมูล',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#ef4444'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          showLoading(true);
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler(() => {
+                fetchData();
+                Swal.fire('ลบสำเร็จ!', `ลบรายการน้ำยา ${reagentId} แล้ว`, 'success');
+              })
+              .deleteReagent(reagentId);
+          } else {
+            appState.reagents = appState.reagents.filter(r => r.ReagentID !== reagentId);
+            showLoading(false);
+            renderAllViews();
+            Swal.fire('ลบสำเร็จ!', `ลบรายการน้ำยา ${reagentId} แล้ว (Local)`, 'success');
+          }
+        }
+      });
+    }
+
+    function openAddIQCControlModal() {
+      document.getElementById('iqcControlForm').reset();
+      document.getElementById('editing-control-id').value = '';
+      document.getElementById('ctl-test-type').selectedIndex = 0;
+      document.getElementById('ctl-modal-title').innerText = 'ลงทะเบียนสารควบคุม IQC ใหม่ (Mean & SD)';
+      document.getElementById('ctl-btn-submit').innerText = 'บันทึกสารควบคุม';
+      toggleControlLevels();
+      openModal('addIQCControlModal');
+    }
+
+    function openEditIQCControlModal(controlId) {
+      const ctl = appState.controls.find(c => String(c.ControlID).trim() === String(controlId).trim());
+      if (!ctl) return;
+
+      document.getElementById('editing-control-id').value = ctl.ControlID;
+      document.getElementById('ctl-test-type').value = ctl.TestType;
+      document.getElementById('ctl-name').value = ctl.ControlName;
+      document.getElementById('ctl-lot').value = ctl.LotNumber;
+      document.getElementById('ctl-levels').value = ctl.LevelsCount || 2;
+      document.getElementById('ctl-start').value = ctl.StartDate;
+      document.getElementById('ctl-exp').value = ctl.ExpiryDate;
+
+      toggleControlLevels();
+
+      const count = parseInt(ctl.LevelsCount) || 2;
+      for (let i = 1; i <= count; i++) {
+        if (document.getElementById(`ctl-l${i}-mean`)) document.getElementById(`ctl-l${i}-mean`).value = ctl[`L${i}_Mean`] || '';
+        if (document.getElementById(`ctl-l${i}-sd`)) document.getElementById(`ctl-l${i}-sd`).value = ctl[`L${i}_SD`] || '';
+      }
+
+      document.getElementById('ctl-modal-title').innerText = `แก้ไขสารควบคุม IQC (${ctl.ControlID})`;
+      document.getElementById('ctl-btn-submit').innerText = 'บันทึกการแก้ไข';
+      openModal('addIQCControlModal');
+    }
+
+    function confirmDeleteIQCControl(controlId) {
+      Swal.fire({
+        title: 'ยืนยันการลบสารควบคุม IQC?',
+        text: `คุณต้องการลบสารควบคุมรหัส "${controlId}" ใช่หรือไม่?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ลบข้อมูล',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#ef4444'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          showLoading(true);
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler(() => {
+                fetchData();
+                Swal.fire('ลบสำเร็จ!', `ลบสารควบคุม ${controlId} แล้ว`, 'success');
+              })
+              .deleteIQCControl(controlId);
+          } else {
+            appState.controls = appState.controls.filter(c => String(c.ControlID).trim() !== String(controlId).trim());
+            showLoading(false);
+            renderAllViews();
+            Swal.fire('ลบสำเร็จ!', `ลบสารควบคุม ${controlId} แล้ว (Local)`, 'success');
+          }
+        }
+      });
+    }
+
+    function openIQCModal() {
+      document.getElementById('iqcReportForm').reset();
+      document.getElementById('editing-result-id').value = '';
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      document.getElementById('iqc-test-date').value = todayStr;
+
+      document.getElementById('iqc-modal-title').innerText = 'รายงานผลการตรวจ IQC';
+      document.getElementById('iqc-btn-submit').innerText = 'วิเคราะห์ & บันทึกผล IQC';
+
+      openModal('iqcReportModal');
+      onIQCCascadeChange();
+    }
+
+    function openSettingsModal() { openModal('settingsModal'); }
+
+    // Save or Update Device
+    function handleSaveDevice(e) {
+      e.preventDefault();
+      const editingId = document.getElementById('editing-device-id').value;
+
+      const devData = {
+        testType: document.getElementById('dev-test-type').value,
+        deviceName: document.getElementById('dev-name').value,
+        model: document.getElementById('dev-model').value,
+        serialNumber: document.getElementById('dev-sn').value,
+        department: document.getElementById('dev-department').value,
+        contact: document.getElementById('dev-contact').value,
+        startDate: document.getElementById('dev-start-date').value,
+        status: document.getElementById('dev-status').value
+      };
+
+      closeModal('addDeviceModal');
+      showLoading(true);
+
+      if (editingId) {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(() => {
+              fetchData();
+              Swal.fire({ icon: 'success', title: 'อัปเดตข้อมูลเครื่องตรวจสำเร็จ!', text: `รหัสเครื่อง: ${editingId}`, confirmButtonColor: '#a855f7' });
+            })
+            .updateDevice(editingId, devData);
+        } else {
+          const idx = appState.devices.findIndex(d => d.DeviceID === editingId);
+          if (idx !== -1) {
+            appState.devices[idx] = { ...appState.devices[idx], ...devData, DeviceName: devData.deviceName, TestType: devData.testType, Model: devData.model, SerialNumber: devData.serialNumber, Department: devData.department, Contact: devData.contact, StartDate: devData.startDate, Status: devData.status };
+          }
+          showLoading(false);
+          renderAllViews();
+          Swal.fire({ icon: 'success', title: 'อัปเดตข้อมูลเครื่องตรวจสำเร็จ! (Local)', text: `รหัสเครื่อง: ${editingId}`, confirmButtonColor: '#a855f7' });
+        }
+      } else {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(res => {
+              document.getElementById('deviceForm').reset();
+              fetchData();
+              Swal.fire({ icon: 'success', title: 'ลงทะเบียนเครื่องตรวจสำเร็จ!', text: `รหัสเครื่อง: ${res.deviceId}`, confirmButtonColor: '#a855f7' });
+            })
+            .addDevice(devData);
+        } else {
+          const devId = `DEV-${String(appState.devices.length + 1).padStart(3, '0')}`;
+          appState.devices.push({ ...devData, DeviceID: devId, DeviceName: devData.deviceName, TestType: devData.testType, Model: devData.model, SerialNumber: devData.serialNumber, Department: devData.department, Contact: devData.contact, StartDate: devData.startDate, Status: devData.status });
+          document.getElementById('deviceForm').reset();
+          showLoading(false);
+          renderAllViews();
+          Swal.fire({ icon: 'success', title: 'ลงทะเบียนเครื่องตรวจสำเร็จ! (Local)', text: `รหัสเครื่อง: ${devId}`, confirmButtonColor: '#a855f7' });
+        }
+      }
+    }
+
+    // Save or Update Reagent
+    function handleSaveReagent(e) {
+      e.preventDefault();
+      const editingId = document.getElementById('editing-reagent-id').value;
+
+      const reaData = {
+        testType: document.getElementById('rea-test-type').value,
+        reagentName: document.getElementById('rea-name').value,
+        lotNumber: document.getElementById('rea-lot').value,
+        expiryDate: document.getElementById('rea-exp').value
+      };
+
+      closeModal('addReagentModal');
+      showLoading(true);
+
+      if (editingId) {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(() => {
+              fetchData();
+              Swal.fire({ icon: 'success', title: 'อัปเดตข้อมูลน้ำยาสำเร็จ!', confirmButtonColor: '#a855f7' });
+            })
+            .updateReagent(editingId, reaData);
+        } else {
+          const idx = appState.reagents.findIndex(r => r.ReagentID === editingId);
+          if (idx !== -1) {
+            appState.reagents[idx] = { ...appState.reagents[idx], ...reaData, TestType: reaData.testType, ReagentName: reaData.reagentName, LotNumber: reaData.lotNumber, ExpiryDate: reaData.expiryDate };
+          }
+          showLoading(false);
+          renderAllViews();
+          Swal.fire({ icon: 'success', title: 'อัปเดตข้อมูลน้ำยาสำเร็จ! (Local)', confirmButtonColor: '#a855f7' });
+        }
+      } else {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(() => {
+              document.getElementById('reagentForm').reset();
+              fetchData();
+              Swal.fire({ icon: 'success', title: 'ลงทะเบียนน้ำยาสำเร็จ!', confirmButtonColor: '#a855f7' });
+            })
+            .addReagent(reaData);
+        } else {
+          appState.reagents.push({ ...reaData, ReagentID: `REA-${appState.reagents.length + 1}`, TestType: reaData.testType, ReagentName: reaData.reagentName, LotNumber: reaData.lotNumber, ExpiryDate: reaData.expiryDate });
+          document.getElementById('reagentForm').reset();
+          showLoading(false);
+          renderAllViews();
+          Swal.fire({ icon: 'success', title: 'ลงทะเบียนน้ำยาสำเร็จ! (Local)', confirmButtonColor: '#a855f7' });
+        }
+      }
+    }
+
+    // Save or Update IQC Control (Mean & SD ONLY)
+    function handleSaveIQCControl(e) {
+      e.preventDefault();
+      const editingId = document.getElementById('editing-control-id').value;
+      const count = parseInt(document.getElementById('ctl-levels').value);
+
+      const ctlData = {
+        testType: document.getElementById('ctl-test-type').value,
+        controlName: document.getElementById('ctl-name').value,
+        lotNumber: document.getElementById('ctl-lot').value,
+        levelsCount: count,
+        startDate: document.getElementById('ctl-start').value,
+        expiryDate: document.getElementById('ctl-exp').value
+      };
+
+      for (let i = 1; i <= count; i++) {
+        ctlData[`l${i}Mean`] = document.getElementById(`ctl-l${i}-mean`)?.value || '';
+        ctlData[`l${i}SD`] = document.getElementById(`ctl-l${i}-sd`)?.value || '';
+      }
+
+      closeModal('addIQCControlModal');
+      showLoading(true);
+
+      if (editingId) {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(() => {
+              fetchData();
+              Swal.fire({ icon: 'success', title: 'อัปเดตสารควบคุม IQC สำเร็จ!', confirmButtonColor: '#a855f7' });
+            })
+            .updateIQCControl(editingId, ctlData);
+        } else {
+          const idx = appState.controls.findIndex(c => String(c.ControlID).trim() === editingId);
+          if (idx !== -1) {
+            appState.controls[idx] = {
+              ControlID: editingId,
+              TestType: ctlData.testType,
+              ControlName: ctlData.controlName,
+              LotNumber: ctlData.lotNumber,
+              LevelsCount: count,
+              L1_Mean: ctlData.l1Mean, L1_SD: ctlData.l1SD,
+              L2_Mean: ctlData.l2Mean, L2_SD: ctlData.l2SD,
+              L3_Mean: ctlData.l3Mean, L3_SD: ctlData.l3SD,
+              StartDate: ctlData.startDate, ExpiryDate: ctlData.expiryDate
+            };
+          }
+          showLoading(false);
+          renderAllViews();
+          Swal.fire({ icon: 'success', title: 'อัปเดตสารควบคุม IQC สำเร็จ! (Local)', confirmButtonColor: '#a855f7' });
+        }
+      } else {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(() => {
+              document.getElementById('iqcControlForm').reset();
+              fetchData();
+              Swal.fire({ icon: 'success', title: 'เพิ่มสารควบคุม IQC สำเร็จ!', confirmButtonColor: '#a855f7' });
+            })
+            .addIQCControl(ctlData);
+        } else {
+          const mockObj = {
+            ControlID: `CTL-${appState.controls.length + 1}`,
+            TestType: ctlData.testType,
+            ControlName: ctlData.controlName,
+            LotNumber: ctlData.lotNumber,
+            LevelsCount: count,
+            L1_Mean: ctlData.l1Mean, L1_SD: ctlData.l1SD,
+            L2_Mean: ctlData.l2Mean, L2_SD: ctlData.l2SD,
+            L3_Mean: ctlData.l3Mean, L3_SD: ctlData.l3SD,
+            StartDate: ctlData.startDate, ExpiryDate: ctlData.expiryDate
+          };
+          appState.controls.push(mockObj);
+          document.getElementById('iqcControlForm').reset();
+          showLoading(false);
+          renderAllViews();
+          Swal.fire({ icon: 'success', title: 'เพิ่มสารควบคุม IQC สำเร็จ! (Local)', confirmButtonColor: '#a855f7' });
+        }
+      }
+    }
+
+    // Save or Update IQC Result & Evaluate Westgard Rules
+    function handleSaveIQCResult(e) {
+      e.preventDefault();
+
+      const editingId = document.getElementById('editing-result-id').value;
+      const deviceId = document.getElementById('iqc-device-id').value;
+      const controlLot = document.getElementById('iqc-control-lot').value;
+
+      const newRun = {
+        testDate: document.getElementById('iqc-test-date').value,
+        deviceId: deviceId,
+        reagentLot: document.getElementById('iqc-reagent-lot').value,
+        controlLot: controlLot,
+        l1Result: document.getElementById('iqc-res-l1')?.value || '',
+        l2Result: document.getElementById('iqc-res-l2')?.value || '',
+        l3Result: document.getElementById('iqc-res-l3')?.value || '',
+        L1_Result: document.getElementById('iqc-res-l1')?.value || '',
+        L2_Result: document.getElementById('iqc-res-l2')?.value || '',
+        L3_Result: document.getElementById('iqc-res-l3')?.value || '',
+        testerName: document.getElementById('iqc-tester').value,
+        supervisorName: document.getElementById('iqc-supervisor').value,
+        notes: document.getElementById('iqc-notes').value
+      };
+
+      const evaluation = evaluateWestgardRules(deviceId, controlLot, newRun);
+      newRun.status = evaluation.status;
+      newRun.violatedRules = evaluation.violated;
+      newRun.Status = evaluation.status;
+      newRun.ViolatedRules = evaluation.violated;
+
+      closeModal('iqcReportModal');
+      showLoading(true);
+
+      if (editingId) {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(() => {
+              document.getElementById('iqcReportForm').reset();
+              fetchData();
+              showEvaluationAlert(evaluation);
+            })
+            .updateIQCResult(editingId, newRun);
+        } else {
+          const idx = appState.results.findIndex(r => r.ResultID === editingId);
+          if (idx !== -1) {
+            appState.results[idx] = { ...appState.results[idx], ...newRun, ResultID: editingId };
+          }
+          document.getElementById('iqcReportForm').reset();
+          showLoading(false);
+          renderAllViews();
+          showEvaluationAlert(evaluation);
+        }
+      } else {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(() => {
+              document.getElementById('iqcReportForm').reset();
+              fetchData();
+              showEvaluationAlert(evaluation);
+            })
+            .addIQCResult(newRun);
+        } else {
+          appState.results.push({ ...newRun, ResultID: `RES-${appState.results.length + 1}` });
+          document.getElementById('iqcReportForm').reset();
+          showLoading(false);
+          renderAllViews();
+          showEvaluationAlert(evaluation);
+        }
+      }
+    }
+
+    /* DETAILED IQC EVALUATION POPUP ALERT WITH SINGLE-LINE PASS/FAIL STATUS */
+    function showEvaluationAlert(evalRes) {
+      if (evalRes.status === 'In Control') {
+        Swal.fire({
+          icon: 'success',
+          title: 'ผลการประเมิน:<br><span class="text-emerald-600 font-bold">ผ่านเกณฑ์ (In Control)</span>',
+          html: `
+            <div class="text-left space-y-2 text-xs sm:text-sm p-3 bg-emerald-50/80 rounded-xl border border-emerald-200 mt-2">
+              <p class="font-bold text-emerald-900"><i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i>ผลการควบคุมคุณภาพอยู่ระดับมาตรฐาน</p>
+              <p class="text-slate-700">ไม่พบการละเมิดกฎ Westgard Multi-rules เครื่องตรวจพร้อมให้บริการปกติ</p>
+            </div>
+          `,
+          confirmButtonText: 'ตกลง',
+          confirmButtonColor: '#10b981'
+        });
+      } else if (evalRes.status === 'Warning') {
+        Swal.fire({
+          icon: 'warning',
+          title: 'ผลการประเมิน:<br><span class="text-amber-600 font-bold">เฝ้าระวัง (Warning)</span>',
+          html: `
+            <div class="text-left space-y-2 text-xs sm:text-sm p-3 bg-amber-50/80 rounded-xl border border-amber-200 mt-2">
+              <p class="font-bold text-amber-900"><i class="fa-solid fa-triangle-exclamation text-amber-600 mr-1.5"></i>พบการเตือน (Warning)</p>
+              <p class="text-slate-800">กฎที่ละเมิด: <strong class="text-amber-950 font-bold">${evalRes.violated}</strong></p>
+              <p class="text-slate-700">คำแนะนำ: เฝ้าระวังผลการตรวจถัดไป และตรวจสอบแนวโน้ม L-J Chart</p>
+            </div>
+          `,
+          confirmButtonText: 'รับทราบ',
+          confirmButtonColor: '#f59e0b'
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'ผลการประเมิน:<br><span class="text-rose-600 font-bold">ไม่ผ่านเกณฑ์! (Out of Control)</span>',
+          html: `
+            <div class="text-left space-y-2 text-xs sm:text-sm p-3 bg-rose-50/80 rounded-xl border border-rose-200 mt-2">
+              <p class="font-bold text-rose-900"><i class="fa-solid fa-circle-xmark text-rose-600 mr-1.5"></i>ผลการควบคุมคุณภาพไม่ผ่านเกณฑ์มาตรฐาน</p>
+              <p class="text-slate-800">กฎ Westgard ที่ละเมิด: <strong class="text-rose-950 font-bold">${evalRes.violated}</strong></p>
+              <p class="text-slate-700">คำแนะนำ: <strong>ห้ามใช้เครื่องตรวจวิเคราะห์!</strong> กรุณาตรวจสอบน้ำยา/สารควบคุม และทำ IQC ซ้ำทันที</p>
+            </div>
+          `,
+          confirmButtonText: 'รับทราบ (ระงับใช้งาน)',
+          confirmButtonColor: '#ef4444'
+        });
+      }
+    }
+
+    function promptAddSetting(category) {
+      closeModal('settingsModal');
+      Swal.fire({
+        title: `เพิ่มตัวเลือกสำหรับ ${category}`,
+        input: 'text',
+        inputPlaceholder: 'พิมพ์ชื่อตัวเลือกที่ต้องการเพิ่ม...',
+        showCancelButton: true,
+        confirmButtonText: 'บันทึก',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#a855f7'
+      }).then((result) => {
+        if (result.isConfirmed && result.value.trim() !== '') {
+          const val = result.value.trim();
+          showLoading(true);
+
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler(() => {
+                fetchData();
+                Swal.fire({ title: 'สำเร็จ!', text: `เพิ่มตัวเลือก "${val}" แล้ว`, icon: 'success' });
+              })
+              .addSettingOption(category, val);
+          } else {
+            appState.settings.push({ Category: category, Value: val });
+            showLoading(false);
+            renderAllViews();
+            Swal.fire({ title: 'สำเร็จ!', text: `เพิ่มตัวเลือก "${val}" แล้ว (Local)`, icon: 'success' });
+          }
+        }
+      });
+    }
+
+    function renderSettingsPills() {
+      ['TestType', 'Department', 'Contact', 'Supervisor'].forEach(cat => {
+        const container = document.getElementById(`setting-list-${cat}`);
+        if (!container) return;
+        container.innerHTML = '';
+        const vals = getSettingValues(cat);
+        vals.forEach(v => {
+          container.innerHTML += `
+            <span class="px-2.5 py-1 rounded-lg bg-purple-100 text-purple-900 text-xs font-medium border border-purple-200">
+              ${v}
+            </span>
+          `;
+        });
+      });
+    }
+
+    function getMockData() {
+      return {
+        spreadsheetId: '1q0cymT8Wn3BD1BPYG1CRK_X-RSMBMu2dtqvVcN2pq1U',
+        settings: [
+          { Category: 'TestType', Value: 'Blood Glucose (DTX)' },
+          { Category: 'TestType', Value: 'Blood Lactate' },
+          { Category: 'Department', Value: 'สามัญหญิง' },
+          { Category: 'Department', Value: 'สามัญชาย' },
+          { Category: 'Department', Value: 'พิเศษ 5' },
+          { Category: 'Department', Value: 'เคมีบำบัด' },
+          { Category: 'Department', Value: 'มะเร็งนรีเวช' },
+          { Category: 'Department', Value: 'รังสีวินิจฉัย' },
+          { Category: 'Department', Value: 'รังสีรักษา' },
+          { Category: 'Department', Value: 'รังสีร่วมรักษา' },
+          { Category: 'Department', Value: 'ทันตกรรม' },
+          { Category: 'Department', Value: 'ผู้ป่วยนอกทั่วไป' },
+          { Category: 'Department', Value: 'วิสัญญีพยาบาล' },
+          { Category: 'Department', Value: 'ประกายแสง 5' },
+          { Category: 'Department', Value: 'เวชศาสตร์นิวเคลียร์' },
+          { Category: 'Department', Value: 'ส่องกล้อง' },
+          { Category: 'Contact', Value: 'พยาบาลประจำเคาน์เตอร์' },
+          { Category: 'Contact', Value: 'นักเทคนิคการแพทย์' },
+          { Category: 'Supervisor', Value: 'ปวรวรรชน์ ภูริคัมภีร์' },
+          { Category: 'Supervisor', Value: 'จักรพงษ์ ณ รังษี' },
+          { Category: 'Status', Value: 'พร้อมใช้' },
+          { Category: 'Status', Value: 'เลิกใช้' },
+          { Category: 'Status', Value: 'ระหว่างซ่อม' }
+        ],
+        devices: [
+          { DeviceID: 'DEV-001', DeviceName: 'Glucose Meter #1', TestType: 'Blood Glucose (DTX)', Model: 'Accu-Chek Inform II', SerialNumber: 'SN-9876541', Department: 'สามัญหญิง', Contact: 'พยาบาลประจำเคาน์เตอร์', StartDate: '2025-01-10', Status: 'พร้อมใช้' },
+          { DeviceID: 'DEV-002', DeviceName: 'Glucose Meter #2', TestType: 'Blood Glucose (DTX)', Model: 'Accu-Chek Inform II', SerialNumber: 'SN-9876542', Department: 'ผู้ป่วยนอกทั่วไป', Contact: 'พยาบาลประจำเคาน์เตอร์', StartDate: '2025-01-15', Status: 'พร้อมใช้' },
+          { DeviceID: 'DEV-003', DeviceName: 'Lactate Scout #1', TestType: 'Blood Lactate', Model: 'Lactate Scout 4', SerialNumber: 'SN-1234567', Department: 'วิสัญญีพยาบาล', Contact: 'นักเทคนิคการแพทย์', StartDate: '2025-02-01', Status: 'พร้อมใช้' }
+        ],
+        reagents: [
+          { ReagentID: 'REA-001', TestType: 'Blood Glucose (DTX)', ReagentName: 'Accu-Chek Performa Strips', LotNumber: 'LOT-GLU-2026A', ExpiryDate: '2026-12-31' },
+          { ReagentID: 'REA-002', TestType: 'Blood Lactate', ReagentName: 'Lactate Scout Test Strips', LotNumber: 'LOT-LAC-2026B', ExpiryDate: '2026-10-15' }
+        ],
+        controls: [
+          { ControlID: 'CTL-001', TestType: 'Blood Glucose (DTX)', ControlName: 'Glucose Control Solution', LotNumber: 'CTL-GLU-99', LevelsCount: 2, L1_Mean: 55, L1_SD: 3.5, L2_Mean: 290, L2_SD: 12, StartDate: '2026-01-01', ExpiryDate: '2026-12-31' },
+          { ControlID: 'CTL-002', TestType: 'Blood Glucose (DTX)', ControlName: 'Contour Plus Control', LotNumber: '1234', LevelsCount: 2, L1_Mean: 45, L1_SD: 3.0, L2_Mean: 260, L2_SD: 10, StartDate: '2026-01-01', ExpiryDate: '2026-12-31' }
+        ],
+        results: [
+          { ResultID: 'RES-001', TestDate: '2026-06-01', DeviceID: 'DEV-001', ReagentLot: 'LOT-GLU-2026A', ControlLot: 'CTL-GLU-99', L1_Result: 54, L2_Result: 288, TesterName: 'พยาบาลประจำเคาน์เตอร์', SupervisorName: 'ปวรวรรชน์ ภูริคัมภีร์', Status: 'In Control', ViolatedRules: 'None' },
+          { ResultID: 'RES-002', TestDate: '2026-06-15', DeviceID: 'DEV-001', ReagentLot: 'LOT-GLU-2026A', ControlLot: 'CTL-GLU-99', L1_Result: 56, L2_Result: 294, TesterName: 'นักเทคนิคการแพทย์', SupervisorName: 'จักรพงษ์ ณ รังษี', Status: 'In Control', ViolatedRules: 'None' },
+          { ResultID: 'RES-003', TestDate: '2026-07-01', DeviceID: 'DEV-001', ReagentLot: 'LOT-GLU-2026A', ControlLot: 'CTL-GLU-99', L1_Result: 55, L2_Result: 291, TesterName: 'พยาบาลประจำเคาน์เตอร์', SupervisorName: 'ปวรวรรชน์ ภูริคัมภีร์', Status: 'In Control', ViolatedRules: 'None' },
+          { ResultID: 'RES-004', TestDate: '2026-07-04', DeviceID: 'DEV-002', ReagentLot: 'LOT-GLU-2026A', ControlLot: 'CTL-GLU-99', L1_Result: 53, L2_Result: 289, TesterName: 'นักเทคนิคการแพทย์', SupervisorName: 'ปวรวรรชน์ ภูริคัมภีร์', Status: 'In Control', ViolatedRules: 'None' }
+        ]
+      };
+    }
+  </script>
+</body>
+</html>
